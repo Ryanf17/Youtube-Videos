@@ -62,6 +62,7 @@
       background-color: #28a745;
       font-weight: bold;
     }
+
     .button-group a.donate:hover {
       background-color: #218838;
     }
@@ -113,6 +114,7 @@
       box-sizing: border-box;
       user-select: none;
     }
+
     .settings-menu button:hover,
     .settings-menu .edit-delete-btn:hover {
       background: #666;
@@ -164,7 +166,6 @@
       font-size: 1rem;
     }
 
-    /* Admin button list styling */
     #adminPanel .button-list {
       max-height: 300px;
       overflow-y: auto;
@@ -175,9 +176,8 @@
       background: #222;
     }
 
-    #adminPanel .button-list div.button-item {
+    .button-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       background: #333;
       padding: 6px 8px;
@@ -186,7 +186,18 @@
       user-select: none;
     }
 
-    #adminPanel .button-list div.button-item span {
+    .button-item .drag-handle {
+      cursor: grab;
+      margin-right: 10px;
+      font-size: 18px;
+      user-select: none;
+    }
+
+    .button-item.dragging {
+      opacity: 0.5;
+    }
+
+    .button-item span {
       flex: 1;
       text-align: left;
       overflow: hidden;
@@ -195,21 +206,19 @@
       padding-right: 8px;
     }
 
-    #adminPanel .button-list div.button-item button {
+    .button-item button {
       margin-left: 5px;
-      width: auto;
       padding: 4px 8px;
       font-size: 12px;
       background: #555;
       border-radius: 4px;
       border: none;
       cursor: pointer;
-      user-select: none;
-    }
-    #adminPanel .button-list div.button-item button:hover {
-      background: #777;
     }
 
+    .button-item button:hover {
+      background: #777;
+    }
   </style>
 </head>
 <body>
@@ -218,23 +227,21 @@
   <div class="settings-menu" id="settingsMenu">
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
-      <input type="text" id="username" autocomplete="username" required />
+      <input type="text" id="username" required />
       <label for="password">Password</label>
-      <input type="password" id="password" autocomplete="current-password" required />
+      <input type="password" id="password" required />
       <button type="submit">Log In</button>
     </form>
 
     <div id="adminPanel" style="display:none;">
-      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+      <div class="admin-banner">Admin Mode Enabled</div>
 
-      <div class="button-list" id="adminButtonList">
-        <!-- Admin list of buttons with Edit/Delete will appear here -->
-      </div>
+      <div class="button-list" id="adminButtonList"></div>
 
       <label for="newBtnText">Button Text</label>
       <input type="text" id="newBtnText" placeholder="Button Label" />
       <label for="newBtnUrl">Button URL or Embed URL</label>
-      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
+      <input type="text" id="newBtnUrl" placeholder="https://..." />
       <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
@@ -245,29 +252,31 @@
 
   <h1>Ryan's Builds</h1>
   <p>
-    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens.
   </p>
 
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  const gearBtn = document.getElementById('gearBtn');
-  const settingsMenu = document.getElementById('settingsMenu');
-  const loginForm = document.getElementById('loginForm');
-  const adminPanel = document.getElementById('adminPanel');
-  const buttonGroup = document.getElementById('buttonGroup');
-  const newBtnText = document.getElementById('newBtnText');
-  const newBtnUrl = document.getElementById('newBtnUrl');
-  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
-  const rearrangeBtn = document.getElementById('rearrangeBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
-  const adminButtonList = document.getElementById('adminButtonList');
-
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  let editIndex = null; // Track which button is being edited
+  const buttonGroup = document.getElementById('buttonGroup');
+  const adminPanel = document.getElementById('adminPanel');
+  const loginForm = document.getElementById('loginForm');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const gearBtn = document.getElementById('gearBtn');
+  const adminButtonList = document.getElementById('adminButtonList');
+
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const addBtn = document.getElementById('addBtn');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+
+  let editIndex = null;
   let rearranging = false;
   let draggedEl = null;
 
@@ -275,42 +284,32 @@
     return [
       { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
       { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
-      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
-      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
-      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
       { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
     ];
   }
 
   function loadButtons() {
     const stored = localStorage.getItem('ryansBuildsButtons');
-    if (stored) return JSON.parse(stored);
-    return getDefaultButtons();
+    return stored ? JSON.parse(stored) : getDefaultButtons();
   }
 
   function saveButtons(buttons) {
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
-  // Render the public buttons (links)
   function renderButtons() {
     buttonGroup.innerHTML = '';
     const buttons = loadButtons();
     buttons.forEach(b => {
       const a = document.createElement('a');
-      if (b.isEmbed) {
-        a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
-      } else {
-        a.href = b.url;
-      }
       a.textContent = b.text;
+      a.href = b.isEmbed ? `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}` : b.url;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
       buttonGroup.appendChild(a);
     });
   }
 
-  // Render the admin list of buttons with Edit/Delete
   function renderAdminButtons() {
     adminButtonList.innerHTML = '';
     const buttons = loadButtons();
@@ -318,33 +317,33 @@
       const div = document.createElement('div');
       div.className = 'button-item';
 
-      // Show button text (truncated if too long)
+      const dragHandle = document.createElement('span');
+      dragHandle.className = 'drag-handle';
+      dragHandle.textContent = '⋮⋮';
+      div.appendChild(dragHandle);
+
       const span = document.createElement('span');
       span.textContent = b.text;
       div.appendChild(span);
 
-      // Edit button
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
-      editBtn.title = 'Edit this button';
-      editBtn.addEventListener('click', () => startEditButton(i));
+      editBtn.onclick = () => startEditButton(i);
       div.appendChild(editBtn);
 
-      // Delete button
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
-      delBtn.title = 'Delete this button';
-      delBtn.addEventListener('click', () => deleteButton(i));
+      delBtn.onclick = () => deleteButton(i);
       div.appendChild(delBtn);
 
       adminButtonList.appendChild(div);
     });
+
+    if (rearranging) enableDragAndDrop();
   }
 
-  // Start editing a button - load its data into inputs and change Add button to Save
   function startEditButton(index) {
-    const buttons = loadButtons();
-    const b = buttons[index];
+    const b = loadButtons()[index];
     newBtnText.value = b.text;
     newBtnUrl.value = b.url;
     isEmbedCheckbox.checked = b.isEmbed;
@@ -352,20 +351,15 @@
     addBtn.textContent = 'Save Changes';
   }
 
-  // Delete a button by index
   function deleteButton(index) {
-    if (!confirm('Are you sure you want to delete this button?')) return;
+    if (!confirm('Delete this button?')) return;
     const buttons = loadButtons();
     buttons.splice(index, 1);
     saveButtons(buttons);
     renderButtons();
     renderAdminButtons();
-    if(editIndex !== null && editIndex === index) {
-      clearForm();
-    }
   }
 
-  // Clear inputs and reset edit mode
   function clearForm() {
     newBtnText.value = '';
     newBtnUrl.value = '';
@@ -374,86 +368,19 @@
     addBtn.textContent = 'Add Button';
   }
 
-  // Drag & drop handlers for rearranging buttons
-  function dragStart(e) {
-    draggedEl = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-    draggedEl.classList.add('dragging');
-  }
-
-  function dragOver(e) {
-    e.preventDefault();
-    const target = e.target.closest('.button-item');
-    if (target && target !== draggedEl) {
-      const container = target.parentNode;
-      const rect = target.getBoundingClientRect();
-      const next = (e.clientY - rect.top) / rect.height > 0.5;
-      container.insertBefore(draggedEl, next ? target.nextSibling : target);
-    }
-  }
-
-  function dragEnd(e) {
-    draggedEl.classList.remove('dragging');
-    draggedEl = null;
-    // Rebuild buttons array in new order from admin list
-    const newOrder = [];
-    adminButtonList.querySelectorAll('.button-item span').forEach(span => {
-      const text = span.textContent;
-      // Find corresponding button by text (assumes unique text)
-      // Better would be using indexes or IDs but this suffices here
-      const allButtons = loadButtons();
-      const found = allButtons.find(b => b.text === text);
-      if (found) newOrder.push(found);
-    });
-    saveButtons(newOrder);
-    renderButtons();
-    alert('Buttons rearranged and saved!');
-    rearranging = false;
-    rearrangeBtn.textContent = 'Enable Rearrange';
-    disableDragAndDrop();
-  }
-
-  function enableDragAndDrop() {
-    adminButtonList.querySelectorAll('.button-item').forEach(div => {
-      div.setAttribute('draggable', true);
-      div.addEventListener('dragstart', dragStart);
-      div.addEventListener('dragover', dragOver);
-      div.addEventListener('dragend', dragEnd);
-    });
-  }
-
-  function disableDragAndDrop() {
-    adminButtonList.querySelectorAll('.button-item').forEach(div => {
-      div.removeAttribute('draggable');
-      div.removeEventListener('dragstart', dragStart);
-      div.removeEventListener('dragover', dragOver);
-      div.removeEventListener('dragend', dragEnd);
-    });
-  }
-
-  // Elements used inside event listeners
-  const addBtn = document.getElementById('addBtn');
-
-  // Add or Save button
-  addBtn.addEventListener('click', e => {
+  addBtn.onclick = (e) => {
     e.preventDefault();
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     const isEmbed = isEmbedCheckbox.checked;
 
-    if (!text) return alert('Please enter button text.');
-    if (!url) return alert('Please enter button URL or embed URL.');
-
+    if (!text || !url) return alert('Text and URL are required.');
     const buttons = loadButtons();
 
     if (editIndex !== null) {
-      // Save changes to existing button
       buttons[editIndex] = { text, url, donate: false, isEmbed };
       editIndex = null;
-      addBtn.textContent = 'Add Button';
     } else {
-      // Add new button
       buttons.push({ text, url, donate: false, isEmbed });
     }
 
@@ -461,55 +388,111 @@
     renderButtons();
     renderAdminButtons();
     clearForm();
-    alert(editIndex === null ? 'Button added!' : 'Button updated!');
-  });
+  };
 
-  logoutBtn.addEventListener('click', () => {
+  rearrangeBtn.onclick = () => {
+    rearranging = !rearranging;
+    rearrangeBtn.textContent = rearranging ? 'Finish Rearranging' : 'Enable Rearrange';
+    if (rearranging) {
+      enableDragAndDrop();
+    } else {
+      disableDragAndDrop();
+    }
+  };
+
+  function enableDragAndDrop() {
+    const items = adminButtonList.querySelectorAll('.button-item');
+    items.forEach(item => {
+      item.setAttribute('draggable', true);
+      item.ondragstart = dragStart;
+      item.ondragover = dragOver;
+      item.ondragend = dragEnd;
+    });
+  }
+
+  function disableDragAndDrop() {
+    adminButtonList.querySelectorAll('.button-item').forEach(item => {
+      item.removeAttribute('draggable');
+      item.ondragstart = null;
+      item.ondragover = null;
+      item.ondragend = null;
+    });
+  }
+
+  function dragStart(e) {
+    draggedEl = e.currentTarget;
+    e.dataTransfer.effectAllowed = 'move';
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.currentTarget;
+    if (target !== draggedEl) {
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientY - rect.top) > rect.height / 2;
+      adminButtonList.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
+
+  function dragEnd() {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+
+    const newOrder = [];
+    adminButtonList.querySelectorAll('.button-item span:nth-child(2)').forEach(span => {
+      const text = span.textContent;
+      const found = loadButtons().find(b => b.text === text);
+      if (found) newOrder.push(found);
+    });
+
+    saveButtons(newOrder);
+    renderButtons();
+    alert('Order saved!');
+  }
+
+  logoutBtn.onclick = () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
     loginForm.style.display = 'flex';
     clearForm();
-    alert('Logged out.');
-  });
+  };
 
-  viewVisitorsBtn.addEventListener('click', () => {
-    window.location.href = 'visitors.html'; // Placeholder for visitors
-  });
+  viewVisitorsBtn.onclick = () => {
+    window.location.href = 'visitors.html';
+  };
 
-  gearBtn.addEventListener('click', () => {
+  gearBtn.onclick = () => {
     settingsMenu.classList.toggle('active');
-  });
+  };
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.onsubmit = (e) => {
     e.preventDefault();
-    const username = loginForm.username.value.trim();
-    const password = loginForm.password.value;
-
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const user = loginForm.username.value.trim();
+    const pass = loginForm.password.value;
+    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
       sessionStorage.setItem('loggedIn', 'true');
-      showAdminPanel();
-      alert('Logged in successfully!');
+      loginForm.style.display = 'none';
+      adminPanel.style.display = 'block';
       settingsMenu.classList.remove('active');
+      renderButtons();
+      renderAdminButtons();
     } else {
-      alert('Incorrect username or password.');
+      alert('Incorrect login.');
     }
-  });
+  };
 
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    renderButtons();
-    renderAdminButtons();
-  }
-
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
   if (sessionStorage.getItem('loggedIn') === 'true') {
-    showAdminPanel();
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+    renderAdminButtons();
   } else {
     renderButtons();
   }
