@@ -85,7 +85,7 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 280px;
+      width: 260px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
@@ -158,17 +158,14 @@
       margin-bottom: 10px;
     }
   </style>
-
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
   <div class="settings-menu" id="settingsMenu">
     <form id="loginForm" class="login-form">
-      <label for="username">Email</label>
-      <input type="email" id="username" autocomplete="username" required />
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" required />
       <label for="password">Password</label>
       <input type="password" id="password" autocomplete="current-password" required />
       <button type="submit">Log In</button>
@@ -183,9 +180,8 @@
       <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed code</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
-      <button id="viewVisitorsBtn">View Visitors</button>
+      <button onclick="window.location.href='visitors.html'">View Visitors</button>
       <button id="logoutBtn">Logout</button>
-      <div class="visitor-count" id="visitorCount">Visitors: 0</div>
     </div>
   </div>
 
@@ -196,243 +192,236 @@
 
   <div class="button-group" id="buttonGroup"></div>
 
-  <script>
-    // Initialize Supabase
-    const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const visitorCountEl = document.getElementById('visitorCount');
+  const buttonGroup = document.getElementById('buttonGroup');
 
-    const gearBtn = document.getElementById('gearBtn');
-    const settingsMenu = document.getElementById('settingsMenu');
-    const loginForm = document.getElementById('loginForm');
-    const adminPanel = document.getElementById('adminPanel');
-    const visitorCountEl = document.getElementById('visitorCount');
-    const buttonGroup = document.getElementById('buttonGroup');
-    const addBtn = document.getElementById('addBtn');
-    const rearrangeBtn = document.getElementById('rearrangeBtn');
-    const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const newBtnText = document.getElementById('newBtnText');
-    const newBtnUrl = document.getElementById('newBtnUrl');
-    const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  // Default buttons
+  const defaultButtons = [
+    { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+    { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+    { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+    { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+    { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+    { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
+  ];
 
-    // Default buttons fallback
-    const defaultButtons = [
-      { text: 'Home', url: 'index.html' },
-      { text: 'CPS Build Tour', url: 'tour.html' },
-      { text: 'Button 2', url: '#' },
-      { text: 'Button 3', url: '#' },
-      { text: 'Button 4', url: '#' },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
-    ];
-
-    // Load buttons from localStorage or fallback to defaults
-    function loadButtons() {
+  // Load buttons from localStorage or use defaults
+  function loadButtons() {
+    try {
       const stored = localStorage.getItem('ryansBuildsButtons');
-      if (stored) return JSON.parse(stored);
-      return defaultButtons;
-    }
-
-    function saveButtons(buttons) {
-      localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
-    }
-
-    // Render buttons and embeds on homepage
-    function renderButtons() {
-      buttonGroup.innerHTML = '';
-      const buttons = loadButtons();
-      buttons.forEach(b => {
-        if (b.isEmbed) {
-          // Embed code: insert HTML directly with safe container
-          const div = document.createElement('div');
-          div.classList.add('embed');
-          div.style.padding = '5px';
-          div.style.border = '1px solid #555';
-          div.style.borderRadius = '8px';
-          div.style.margin = '4px';
-          div.style.background = '#222';
-          div.innerHTML = b.url; // url holds embed HTML here
-          buttonGroup.appendChild(div);
-        } else {
-          const a = document.createElement('a');
-          a.href = b.url;
-          a.textContent = b.text;
-          a.target = '_blank';
-          if (b.donate) a.classList.add('donate');
-          buttonGroup.appendChild(a);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
         }
-      });
-    }
-
-    // Drag & drop for rearranging buttons
-    let draggedEl = null;
-    let dragEnabled = false;
-
-    function dragStart(e) {
-      draggedEl = e.target;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-      draggedEl.classList.add('dragging');
-    }
-
-    function dragOver(e) {
-      e.preventDefault();
-      const target = e.target;
-      if (target && target !== draggedEl && (target.tagName === 'A' || target.classList.contains('embed'))) {
-        const container = target.parentNode;
-        const rect = target.getBoundingClientRect();
-        const next = (e.clientX - rect.left) / rect.width > 0.5;
-        container.insertBefore(draggedEl, next ? target.nextSibling : target);
       }
+    } catch {
+      // ignore JSON errors
     }
+    return defaultButtons;
+  }
 
-    function dragEnd(e) {
-      draggedEl.classList.remove('dragging');
-      draggedEl = null;
-      // Save new order
-      const buttons = [];
-      document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
-        if (el.tagName === 'A') {
-          buttons.push({
-            text: el.textContent,
-            url: el.href.includes(window.location.origin) ? el.getAttribute('href') : el.href,
-            donate: el.classList.contains('donate'),
-            isEmbed: false
-          });
-        } else {
-          buttons.push({
-            text: '',
-            url: el.innerHTML,
-            donate: false,
-            isEmbed: true
-          });
-        }
-      });
-      saveButtons(buttons);
-      alert('Buttons rearranged and saved!');
+  function saveButtons(buttons) {
+    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+  }
+
+  // Render buttons on page
+  function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach(b => {
+      if (b.isEmbed) {
+        // Embed code: create a container with embed HTML inside, styled as a small card button
+        const div = document.createElement('div');
+        div.className = 'embed';
+        div.style.cursor = 'default';
+        div.style.padding = '0';
+        div.style.borderRadius = '8px';
+        div.style.overflow = 'hidden';
+        div.style.width = '240px';
+        div.style.height = '135px';
+        div.style.backgroundColor = '#222';
+        div.style.display = 'inline-block';
+        div.style.userSelect = 'none';
+        div.innerHTML = b.url; // url holds the embed iframe HTML
+        buttonGroup.appendChild(div);
+      } else {
+        // Normal button
+        const a = document.createElement('a');
+        a.href = b.url;
+        a.textContent = b.text;
+        a.target = '_blank';
+        if (b.donate) a.classList.add('donate');
+        buttonGroup.appendChild(a);
+      }
+    });
+  }
+
+  // Drag & drop rearranging buttons
+  let draggedEl = null;
+  let rearranging = false;
+
+  function dragStart(e) {
+    if (!rearranging) return;
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    if (!rearranging) return;
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && (target.tagName === 'A' || target.classList.contains('embed'))) {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
     }
+  }
 
-    function enableDragAndDrop() {
-      dragEnabled = true;
-      document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
+  function dragEnd(e) {
+    if (!rearranging) return;
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+
+    // Save new order of buttons
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
+      if (el.tagName === 'A') {
+        buttons.push({
+          text: el.textContent,
+          url: el.href.includes(window.location.origin) ? el.getAttribute('href') : el.href,
+          donate: el.classList.contains('donate'),
+          isEmbed: false
+        });
+      } else {
+        buttons.push({
+          text: 'Embedded Video',
+          url: el.innerHTML,
+          donate: false,
+          isEmbed: true
+        });
+      }
+    });
+    saveButtons(buttons);
+    alert('Buttons rearranged and saved!');
+  }
+
+  function enableDragAndDrop() {
+    rearranging = !rearranging;
+    const btn = document.getElementById('rearrangeBtn');
+    btn.textContent = rearranging ? 'Disable Rearrange' : 'Enable Rearrange';
+
+    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
+      if (rearranging) {
         el.setAttribute('draggable', true);
+        el.style.cursor = 'grab';
         el.addEventListener('dragstart', dragStart);
         el.addEventListener('dragover', dragOver);
         el.addEventListener('dragend', dragEnd);
-      });
-      rearrangeBtn.textContent = 'Disable Rearrange';
-      rearrangeBtn.onclick = disableDragAndDrop;
-    }
-
-    function disableDragAndDrop() {
-      dragEnabled = false;
-      document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
+      } else {
         el.removeAttribute('draggable');
+        el.style.cursor = el.tagName === 'A' ? 'pointer' : 'default';
         el.removeEventListener('dragstart', dragStart);
         el.removeEventListener('dragover', dragOver);
         el.removeEventListener('dragend', dragEnd);
-      });
-      rearrangeBtn.textContent = 'Enable Rearrange';
-      rearrangeBtn.onclick = () => enableDragAndDrop();
-    }
-
-    // Show admin panel
-    function showAdminPanel() {
-      loginForm.style.display = 'none';
-      adminPanel.style.display = 'block';
-      visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
-      renderButtons();
-    }
-
-    // Show login form only
-    function showLoginForm() {
-      loginForm.style.display = 'flex';
-      adminPanel.style.display = 'none';
-      renderButtons();
-    }
-
-    // Logout handler
-    async function logout() {
-      await supabase.auth.signOut();
-      showLoginForm();
-      alert('Logged out.');
-    }
-
-    // Add button handler
-    addBtn.onclick = () => {
-      const text = newBtnText.value.trim();
-      const url = newBtnUrl.value.trim();
-      const isEmbed = isEmbedCheckbox.checked;
-
-      if (!text && !isEmbed) {
-        alert('Please enter button text.');
-        return;
-      }
-      if (!url) {
-        alert('Please enter a URL or embed code.');
-        return;
-      }
-
-      const buttons = loadButtons();
-      if (isEmbed) {
-        buttons.push({ text: '', url, donate: false, isEmbed: true });
-      } else {
-        buttons.push({ text, url, donate: false, isEmbed: false });
-      }
-      saveButtons(buttons);
-      renderButtons();
-
-      // Clear inputs
-      newBtnText.value = '';
-      newBtnUrl.value = '';
-      isEmbedCheckbox.checked = false;
-      alert('Button added!');
-    };
-
-    rearrangeBtn.onclick = () => {
-      if (!dragEnabled) {
-        enableDragAndDrop();
-      } else {
-        disableDragAndDrop();
-      }
-    };
-
-    viewVisitorsBtn.onclick = () => {
-      window.location.href = 'visitors.html';
-    };
-
-    logoutBtn.onclick = logout;
-
-    gearBtn.addEventListener('click', () => {
-      settingsMenu.classList.toggle('active');
-    });
-
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = loginForm.username.value.trim();
-      const password = loginForm.password.value;
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        alert('Login failed: ' + error.message);
-      } else {
-        alert('Logged in successfully!');
-        showAdminPanel();
-        settingsMenu.classList.remove('active');
       }
     });
+  }
 
-    // Check if logged in on page load
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        showAdminPanel();
-      } else {
-        showLoginForm();
-      }
+  // Show admin panel
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+  }
+
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  }
+
+  // Gear button toggles settings menu
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  // Login form submit handler
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
     }
-    checkSession();
+  });
 
-  </script>
+  // Admin add button
+  document.getElementById('addBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = document.getElementById('newBtnText').value.trim();
+    const url = document.getElementById('newBtnUrl').value.trim();
+    const isEmbed = document.getElementById('isEmbedCheckbox').checked;
+
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed code.');
+
+    const buttons = loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+    saveButtons(buttons);
+
+    renderButtons();
+    document.getElementById('newBtnText').value = '';
+    document.getElementById('newBtnUrl').value = '';
+    document.getElementById('isEmbedCheckbox').checked = false;
+
+    alert('Button added!');
+  });
+
+  // Rearrange button toggles drag and drop
+  document.getElementById('rearrangeBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    enableDragAndDrop();
+  });
+
+  // Logout button
+  document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    logout();
+  });
+
+  // Close menu if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+
+  // On load, check if logged in, else just render buttons
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
+  }
+</script>
+
 </body>
 </html>
