@@ -43,23 +43,24 @@
       box-shadow: 0 0 15px rgba(0,0,0,0.7);
     }
 
+    /* Match your index buttons style */
     .back-button {
       margin-top: 30px;
-      padding: 10px 25px;
-      background-color: #28a745;
+      padding: 10px 20px;
+      background-color: #444;
       color: white;
       font-weight: 600;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
+      border-radius: 8px;
       text-decoration: none;
+      cursor: pointer;
       user-select: none;
+      font-size: 1rem;
       transition: background-color 0.3s ease;
+      display: inline-block;
     }
 
     .back-button:hover {
-      background-color: #218838;
+      background-color: #666;
     }
   </style>
 </head>
@@ -68,13 +69,12 @@
   <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
 
   <div id="videoContainer">
-    <!-- iframe inserted here -->
+    <!-- iframe will be inserted here -->
   </div>
 
   <a href="index.html" class="back-button">← Back to Home</a>
 
 <script>
-  // Helper: parse URL query parameters
   function getQueryParams() {
     const params = {};
     window.location.search
@@ -91,27 +91,41 @@
   const videoUrl = params.video || '';
   const title = params.title || 'Video Embed';
 
-  // Set page title and heading
   document.title = title;
   document.getElementById('pageTitle').textContent = title;
 
-  // Embed YouTube iframe if valid video URL
-  // Accept either full embed URL or just video ID (common cases)
   function getEmbedSrc(url) {
     if (!url) return '';
-    // If url already looks like embed url, return it
-    if (url.includes('youtube.com/embed/')) return url;
-    // If url is standard youtube watch URL, convert to embed
-    const watchMatch = url.match(/v=([^&]+)/);
+    console.log('Original video URL param:', url);
+
+    // If url already looks like an embed url, return as is
+    if (url.includes('youtube.com/embed/')) {
+      console.log('URL is already embed URL');
+      return url;
+    }
+
+    // If url is a normal youtube watch URL, extract the v= param
+    const watchMatch = url.match(/[?&]v=([^&]+)/);
     if (watchMatch) {
+      console.log('Extracted video ID from watch URL:', watchMatch[1]);
       return 'https://www.youtube.com/embed/' + watchMatch[1];
     }
-    // If url looks like just a video ID (11 chars typical), embed that
+
+    // If url looks like just a video ID (11 chars)
     if (/^[\w-]{11}$/.test(url)) {
+      console.log('URL looks like a video ID');
       return 'https://www.youtube.com/embed/' + url;
     }
-    // Otherwise return as is (may break if invalid)
-    return url;
+
+    // If url is a youtu.be short link
+    const shortLinkMatch = url.match(/youtu\.be\/([^?&]+)/);
+    if (shortLinkMatch) {
+      console.log('Extracted video ID from youtu.be short link:', shortLinkMatch[1]);
+      return 'https://www.youtube.com/embed/' + shortLinkMatch[1];
+    }
+
+    console.warn('Could not parse video URL for embed:', url);
+    return '';
   }
 
   const embedSrc = getEmbedSrc(videoUrl);
