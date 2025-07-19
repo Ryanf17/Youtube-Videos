@@ -19,16 +19,19 @@
       text-align: center;
       position: relative;
     }
+
     h1 {
       font-size: 3rem;
       margin-bottom: 10px;
     }
+
     p {
       max-width: 600px;
       margin: 20px;
       font-size: 1.2rem;
       line-height: 1.5;
     }
+
     .button-group {
       margin-top: 20px;
       display: flex;
@@ -37,6 +40,7 @@
       justify-content: center;
       max-width: 800px;
     }
+
     .button-group a {
       text-decoration: none;
       color: white;
@@ -48,9 +52,11 @@
       user-select: none;
       cursor: grab;
     }
+
     .button-group a:hover {
       background-color: #666;
     }
+
     .button-group a.donate {
       background-color: #28a745;
       font-weight: bold;
@@ -58,6 +64,7 @@
     .button-group a.donate:hover {
       background-color: #218838;
     }
+
     .gear-container {
       position: fixed;
       top: 15px;
@@ -68,6 +75,7 @@
       user-select: none;
       z-index: 1000;
     }
+
     .settings-menu {
       display: none;
       position: fixed;
@@ -83,9 +91,11 @@
       font-size: 14px;
       z-index: 1000;
     }
+
     .settings-menu.active {
       display: block;
     }
+
     .settings-menu button {
       display: block;
       width: 100%;
@@ -102,15 +112,18 @@
     .settings-menu button:hover {
       background: #666;
     }
+
     .login-form {
       display: flex;
       flex-direction: column;
     }
+
     .login-form label {
       margin: 8px 0 4px;
       text-align: left;
       font-size: 14px;
     }
+
     .login-form input {
       padding: 8px;
       border-radius: 5px;
@@ -118,6 +131,7 @@
       font-size: 14px;
       margin-bottom: 12px;
     }
+
     .login-form button {
       background: #28a745;
       color: white;
@@ -129,9 +143,11 @@
       font-size: 14px;
       transition: background 0.3s;
     }
+
     .login-form button:hover {
       background: #218838;
     }
+
     #adminPanel .admin-banner {
       background: #28a745;
       color: #111;
@@ -177,15 +193,13 @@
 
   <div class="button-group" id="buttonGroup"></div>
 
-  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // Supabase setup
-    const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // DOM elements
     const gearBtn = document.getElementById('gearBtn');
     const settingsMenu = document.getElementById('settingsMenu');
     const loginForm = document.getElementById('loginForm');
@@ -198,74 +212,76 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-    // Admin credentials
+    // Your admin credentials here (will replace with supabase auth later)
     const ADMIN_USERNAME = 'Ryanf17';
     const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-    let buttons = [];
-    let rearranging = false;
-    let draggedEl = null;
+    // Default buttons (always present)
+    const defaultButtons = [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false, position: 1 },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false, position: 2 },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false, position: 3 },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false, position: 4 },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false, position: 5 },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false, position: 6 }
+    ];
 
-    // Default buttons to insert if DB empty
-    function getDefaultButtons() {
-      return [
-        { text: 'Home', url: 'index.html', donate: false, is_embed: false, position: 1 },
-        { text: 'CPS Build Tour', url: 'tour.html', donate: false, is_embed: false, position: 2 },
-        { text: 'Button 2', url: '#', donate: false, is_embed: false, position: 3 },
-        { text: 'Button 3', url: '#', donate: false, is_embed: false, position: 4 },
-        { text: 'Button 4', url: '#', donate: false, is_embed: false, position: 5 },
-        { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, is_embed: false, position: 6 }
-      ];
-    }
+    // This will hold the buttons to render (defaults + Supabase overrides)
+    let buttons = [...defaultButtons];
 
-    // Load buttons from Supabase (or insert defaults if empty)
+    // Load buttons from Supabase and merge with defaults
     async function loadButtons() {
-      const { data, error } = await supabase
-        .from('buttons')
-        .select('*')
-        .order('position', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('buttons')
+          .select('*')
+          .order('position', { ascending: true });
 
-      if (error) {
-        alert('Error loading buttons: ' + error.message);
-        console.error(error);
-        return;
-      }
+        if (error) {
+          console.error('Error loading buttons from Supabase:', error);
+          buttons = [...defaultButtons];
+        } else if (data && data.length) {
+          // Map supabase buttons by position for quick lookup
+          const supabaseMap = new Map(data.map(btn => [btn.position, btn]));
 
-      if (!data || data.length === 0) {
-        const defaults = getDefaultButtons();
-        const { error: insertError } = await supabase.from('buttons').insert(defaults);
-        if (insertError) {
-          alert('Error inserting defaults: ' + insertError.message);
-          console.error(insertError);
-          return;
+          // Merge: override defaults if position matches, otherwise keep default
+          buttons = defaultButtons.map(defBtn => supabaseMap.get(defBtn.position) || defBtn);
+
+          // Add any extra buttons from Supabase beyond the default positions
+          const maxDefaultPos = Math.max(...defaultButtons.map(b => b.position));
+          const extraButtons = data.filter(btn => btn.position > maxDefaultPos);
+          buttons = buttons.concat(extraButtons);
+        } else {
+          buttons = [...defaultButtons];
         }
-        buttons = defaults;
-      } else {
-        buttons = data;
+      } catch (err) {
+        console.error('Unexpected error loading buttons:', err);
+        buttons = [...defaultButtons];
       }
       renderButtons();
     }
 
-    // Render buttons with data-id for updating
+    // Render buttons on homepage
     function renderButtons() {
       buttonGroup.innerHTML = '';
       buttons.forEach(b => {
         const a = document.createElement('a');
-        a.textContent = b.text;
-        a.target = '_blank';
-        a.dataset.id = b.id; // supabase row id
-
-        if (b.is_embed) {
+        if (b.is_embed || b.isEmbed) {
           a.href = 'embed.html?video=' + encodeURIComponent(b.url);
         } else {
           a.href = b.url;
         }
+        a.textContent = b.text;
+        a.target = '_blank';
         if (b.donate) a.classList.add('donate');
         buttonGroup.appendChild(a);
       });
     }
 
-    // Drag & drop handlers
+    // Drag & drop rearranging buttons
+    let draggedEl = null;
+    let rearranging = false;
+
     function dragStart(e) {
       draggedEl = e.target;
       e.dataTransfer.effectAllowed = 'move';
@@ -284,30 +300,37 @@
       }
     }
 
-    async function dragEnd(e) {
+    function dragEnd(e) {
       draggedEl.classList.remove('dragging');
       draggedEl = null;
-
+      // Save new order
       const updatedButtons = [];
       document.querySelectorAll('#buttonGroup a').forEach((a, index) => {
-        updatedButtons.push({ id: a.dataset.id, position: index + 1 });
+        updatedButtons.push({
+          text: a.textContent,
+          url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+          donate: a.classList.contains('donate'),
+          isEmbed: a.href.includes('embed.html?video='),
+          position: index + 1
+        });
       });
 
-      try {
-        for (const btn of updatedButtons) {
-          const { error } = await supabase.from('buttons').update({ position: btn.position }).eq('id', btn.id);
-          if (error) throw error;
-        }
-        await loadButtons();
-        alert('Buttons rearranged and saved!');
-      } catch (err) {
-        alert('Error saving order: ' + err.message);
-        console.error(err);
-      }
+      // Update in Supabase — replace whole buttons table or update individually
+      // For simplicity, let's update buttons one by one
 
-      rearranging = false;
-      rearrangeBtn.textContent = 'Enable Rearrange';
-      disableDragAndDrop();
+      (async () => {
+        // Remove all existing buttons and re-insert updated? Or upsert individually
+        // Let's upsert individually (simple approach)
+
+        for (const btn of updatedButtons) {
+          await supabase.from('buttons').upsert(btn, { onConflict: ['position'] });
+        }
+        buttons = updatedButtons;
+        alert('Buttons rearranged and saved!');
+        rearranging = false;
+        rearrangeBtn.textContent = 'Enable Rearrange';
+        disableDragAndDrop();
+      })();
     }
 
     function enableDragAndDrop() {
@@ -328,7 +351,7 @@
       });
     }
 
-    // Toggle rearranging
+    // Toggle rearranging on button click
     rearrangeBtn.addEventListener('click', () => {
       if (!rearranging) {
         rearranging = true;
@@ -342,35 +365,34 @@
       }
     });
 
-    // Add button to Supabase
+    // Add button handler
     document.getElementById('addBtn').addEventListener('click', async (e) => {
       e.preventDefault();
       const text = newBtnText.value.trim();
       const url = newBtnUrl.value.trim();
-      const is_embed = isEmbedCheckbox.checked;
+      const isEmbed = isEmbedCheckbox.checked;
 
       if (!text) return alert('Please enter button text.');
       if (!url) return alert('Please enter button URL or embed URL.');
 
-      try {
-        const maxPos = buttons.length > 0 ? Math.max(...buttons.map(b => b.position)) : 0;
-        const { data, error } = await supabase.from('buttons').insert([
-          { text, url, is_embed, donate: false, position: maxPos + 1 }
-        ]).select();
+      // Find next position (max + 1)
+      const nextPosition = buttons.length ? Math.max(...buttons.map(b => b.position)) + 1 : 1;
 
-        if (error) throw error;
+      const { error } = await supabase.from('buttons').insert([
+        { text, url, donate: false, is_embed: isEmbed, position: nextPosition }
+      ]);
 
-        buttons.push(data[0]);
-        renderButtons();
-
-        newBtnText.value = '';
-        newBtnUrl.value = '';
-        isEmbedCheckbox.checked = false;
-        alert('Button added!');
-      } catch (err) {
-        alert('Error adding button: ' + err.message);
-        console.error(err);
+      if (error) {
+        alert('Error adding button: ' + error.message);
+        return;
       }
+
+      await loadButtons();
+
+      newBtnText.value = '';
+      newBtnUrl.value = '';
+      isEmbedCheckbox.checked = false;
+      alert('Button added!');
     });
 
     // Logout handler
@@ -378,13 +400,12 @@
       sessionStorage.removeItem('loggedIn');
       adminPanel.style.display = 'none';
       loginForm.style.display = 'flex';
-      settingsMenu.classList.remove('active');
       alert('Logged out.');
     });
 
     // View visitors (placeholder)
     viewVisitorsBtn.addEventListener('click', () => {
-      window.location.href = 'visitors.html';
+      window.location.href = 'visitors.html'; // Placeholder, implement later
     });
 
     // Gear button toggles settings menu
@@ -408,7 +429,6 @@
       }
     });
 
-    // Show admin panel
     function showAdminPanel() {
       loginForm.style.display = 'none';
       adminPanel.style.display = 'block';
@@ -422,16 +442,13 @@
       }
     });
 
-    // On page load - check login and load buttons
-    (async () => {
-      await loadButtons();
-
-      if (sessionStorage.getItem('loggedIn') === 'true') {
-        showAdminPanel();
-      } else {
-        renderButtons();
-      }
-    })();
+    // On page load
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      showAdminPanel();
+      loadButtons();
+    } else {
+      loadButtons();
+    }
   </script>
 </body>
 </html>
