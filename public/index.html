@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
     body {
@@ -19,19 +19,16 @@
       text-align: center;
       position: relative;
     }
-
     h1 {
       font-size: 3rem;
       margin-bottom: 10px;
     }
-
     p {
       max-width: 600px;
       margin: 20px;
       font-size: 1.2rem;
       line-height: 1.5;
     }
-
     .button-group {
       margin-top: 20px;
       display: flex;
@@ -40,8 +37,7 @@
       justify-content: center;
       max-width: 800px;
     }
-
-    .button-group a, .button-group .embed {
+    .button-group a {
       text-decoration: none;
       color: white;
       background-color: #444;
@@ -52,11 +48,9 @@
       user-select: none;
       cursor: grab;
     }
-
     .button-group a:hover {
       background-color: #666;
     }
-
     .button-group a.donate {
       background-color: #28a745;
       font-weight: bold;
@@ -64,15 +58,6 @@
     .button-group a.donate:hover {
       background-color: #218838;
     }
-
-    /* embed iframe styling */
-    .button-group .embed iframe {
-      border-radius: 8px;
-      border: none;
-      width: 320px;
-      height: 180px;
-    }
-
     .gear-container {
       position: fixed;
       top: 15px;
@@ -83,7 +68,6 @@
       user-select: none;
       z-index: 1000;
     }
-
     .settings-menu {
       display: none;
       position: fixed;
@@ -93,17 +77,15 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 280px;
+      width: 300px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
       z-index: 1000;
     }
-
     .settings-menu.active {
       display: block;
     }
-
     .settings-menu button {
       display: block;
       width: 100%;
@@ -120,18 +102,15 @@
     .settings-menu button:hover {
       background: #666;
     }
-
     .login-form {
       display: flex;
       flex-direction: column;
     }
-
     .login-form label {
       margin: 8px 0 4px;
       text-align: left;
       font-size: 14px;
     }
-
     .login-form input {
       padding: 8px;
       border-radius: 5px;
@@ -139,7 +118,6 @@
       font-size: 14px;
       margin-bottom: 12px;
     }
-
     .login-form button {
       background: #28a745;
       color: white;
@@ -151,11 +129,9 @@
       font-size: 14px;
       transition: background 0.3s;
     }
-
     .login-form button:hover {
       background: #218838;
     }
-
     #adminPanel .admin-banner {
       background: #28a745;
       color: #111;
@@ -166,34 +142,19 @@
       margin-bottom: 12px;
       font-size: 1rem;
     }
-
-    #adminPanel label {
-      display: block;
-      text-align: left;
-      margin-top: 8px;
-      font-size: 14px;
-    }
-
-    #adminPanel input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-      font-size: 14px;
-      margin-bottom: 8px;
-      box-sizing: border-box;
-    }
-
-    #adminPanel input[type="checkbox"] {
-      margin-right: 6px;
+    /* Drag cursor toggle */
+    .dragging {
+      opacity: 0.6;
+      cursor: grabbing !important;
     }
   </style>
 </head>
 <body>
+
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
   <div class="settings-menu" id="settingsMenu">
-    <!-- Login form -->
+    <!-- Login Form -->
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
       <input type="text" id="username" autocomplete="username" required />
@@ -202,23 +163,18 @@
       <button type="submit">Log In</button>
     </form>
 
-    <!-- Admin panel -->
+    <!-- Admin Panel -->
     <div id="adminPanel" style="display:none;">
       <div class="admin-banner" id="adminBanner">Admin Mode Active</div>
-
       <label for="newBtnText">Button Text</label>
       <input type="text" id="newBtnText" placeholder="Button Label" />
-
       <label for="newBtnUrl">Button URL or Embed HTML</label>
       <input type="text" id="newBtnUrl" placeholder="https://... or &lt;iframe&gt;..." />
-
       <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed code</label>
-
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
-      <button id="viewVisitorsBtn" onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button id="viewVisitorsBtn">View Visitors</button>
       <button id="logoutBtn">Logout</button>
-
       <div class="visitor-count" id="visitorCount">Visitors: 0</div>
     </div>
   </div>
@@ -237,166 +193,145 @@
   const adminPanel = document.getElementById('adminPanel');
   const visitorCountEl = document.getElementById('visitorCount');
   const buttonGroup = document.getElementById('buttonGroup');
-  const addBtn = document.getElementById('addBtn');
-  const rearrangeBtn = document.getElementById('rearrangeBtn');
-  const logoutBtn = document.getElementById('logoutBtn');
   const newBtnText = document.getElementById('newBtnText');
   const newBtnUrl = document.getElementById('newBtnUrl');
   const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const addBtn = document.getElementById('addBtn');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
 
-  // Credentials
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  // Drag mode flag
   let dragModeEnabled = false;
 
-  // Load buttons or defaults
-  function loadButtons() {
-    const stored = localStorage.getItem('ryansBuildsButtons');
-    if (stored) return JSON.parse(stored);
+  // Default buttons (with IDs & positions)
+  function getDefaultButtons() {
     return [
-      { text: 'Home', url: 'index.html', donate: false, is_embed: false, position: 1 },
-      { text: 'CPS Build Tour', url: 'tour.html', donate: false, is_embed: false, position: 2 },
-      { text: 'Button 2', url: '#', donate: false, is_embed: false, position: 3 },
-      { text: 'Button 3', url: '#', donate: false, is_embed: false, position: 4 },
-      { text: 'Button 4', url: '#', donate: false, is_embed: false, position: 5 },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, is_embed: false, position: 6 }
+      { id: 1, text: 'Home', url: 'index.html', donate: false, is_embed: false, position: 1 },
+      { id: 2, text: 'CPS Build Tour', url: 'tour.html', donate: false, is_embed: false, position: 2 },
+      { id: 3, text: 'Button 2', url: '#', donate: false, is_embed: false, position: 3 },
+      { id: 4, text: 'Button 3', url: '#', donate: false, is_embed: false, position: 4 },
+      { id: 5, text: 'Button 4', url: '#', donate: false, is_embed: false, position: 5 },
+      { id: 6, text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, is_embed: false, position: 6 },
     ];
   }
 
+  // Load buttons from localStorage or defaults
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch { }
+    }
+    return getDefaultButtons();
+  }
+
+  // Save buttons to localStorage
   function saveButtons(buttons) {
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
+  // Render buttons on homepage
   function renderButtons() {
     buttonGroup.innerHTML = '';
     let buttons = loadButtons();
-
-    // Sort by position
-    buttons.sort((a, b) => a.position - b.position);
+    buttons.sort((a,b) => a.position - b.position);
 
     buttons.forEach(b => {
+      const a = document.createElement('a');
       if (b.is_embed) {
-        // Render embed HTML
-        const div = document.createElement('div');
-        div.classList.add('embed');
-        div.innerHTML = b.url;
-        buttonGroup.appendChild(div);
+        // Link to embed page with ID param
+        a.href = `embed.html?id=${b.id}`;
+        a.textContent = b.text;
+        a.target = '_blank';
       } else {
-        const a = document.createElement('a');
         a.href = b.url;
         a.textContent = b.text;
         a.target = '_blank';
         if (b.donate) a.classList.add('donate');
-        buttonGroup.appendChild(a);
       }
+      buttonGroup.appendChild(a);
     });
 
-    if (dragModeEnabled) enableDragAndDrop();
+    if(dragModeEnabled) enableDragAndDrop();
   }
 
-  // Drag and drop functionality
+  // Drag & drop handlers
   let draggedEl = null;
-
   function dragStart(e) {
     draggedEl = e.target;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', draggedEl.outerHTML);
     draggedEl.classList.add('dragging');
   }
-
   function dragOver(e) {
     e.preventDefault();
     const target = e.target;
-    if (target && target !== draggedEl && (target.tagName === 'A' || target.classList.contains('embed'))) {
+    if (target && target !== draggedEl && target.tagName === 'A') {
       const container = target.parentNode;
       const rect = target.getBoundingClientRect();
       const next = (e.clientX - rect.left) / rect.width > 0.5;
       container.insertBefore(draggedEl, next ? target.nextSibling : target);
     }
   }
-
   function dragEnd(e) {
     draggedEl.classList.remove('dragging');
     draggedEl = null;
-    // Save new order and position
+    // Save new order
     const buttons = [];
-    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach((el, index) => {
-      if (el.tagName === 'A') {
-        buttons.push({
-          text: el.textContent,
-          url: el.href.includes(window.location.origin) ? el.getAttribute('href') : el.href,
-          donate: el.classList.contains('donate'),
-          is_embed: false,
-          position: index + 1
-        });
-      } else if (el.classList.contains('embed')) {
-        buttons.push({
-          text: 'Embed',
-          url: el.innerHTML,
-          donate: false,
-          is_embed: true,
-          position: index + 1
-        });
-      }
+    document.querySelectorAll('#buttonGroup a').forEach((a, index) => {
+      buttons.push({
+        id: getIdFromHref(a.href),
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        is_embed: a.href.includes('embed.html?id='),
+        position: index + 1
+      });
     });
     saveButtons(buttons);
     alert('Buttons rearranged and saved!');
   }
-
   function enableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
-      el.setAttribute('draggable', true);
-      el.addEventListener('dragstart', dragStart);
-      el.addEventListener('dragover', dragOver);
-      el.addEventListener('dragend', dragEnd);
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+      a.style.cursor = 'grab';
     });
   }
 
-  function disableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
-      el.removeAttribute('draggable');
-      el.removeEventListener('dragstart', dragStart);
-      el.removeEventListener('dragover', dragOver);
-      el.removeEventListener('dragend', dragEnd);
+  function getIdFromHref(href) {
+    // For embed buttons: href is embed.html?id=xxx
+    const url = new URL(href);
+    if (url.pathname.endsWith('embed.html')) {
+      return Number(url.searchParams.get('id'));
+    }
+    // For normal buttons, try to match by url or fallback to 0
+    const buttons = loadButtons();
+    const found = buttons.find(b => {
+      // Normalize href and b.url for comparison (ignore domain)
+      const bUrl = new URL(b.url, window.location.origin).href;
+      return bUrl === href;
     });
+    return found ? found.id : 0;
   }
 
-  // Show admin panel after login
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
-    renderButtons();
-  }
-
-  // Logout
-  function logout() {
-    sessionStorage.removeItem('loggedIn');
-    adminPanel.style.display = 'none';
-    loginForm.style.display = 'flex';
-    dragModeEnabled = false;
-    rearrangeBtn.textContent = 'Enable Rearrange';
-    disableDragAndDrop();
-    alert('Logged out.');
-  }
-
-  // Gear button toggles menu
+  // Admin panel controls
   gearBtn.addEventListener('click', () => {
     settingsMenu.classList.toggle('active');
   });
 
-  // Login form submission
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', e => {
     e.preventDefault();
-    const username = newBtnText.value.trim() || '';
-    const password = newBtnUrl.value || '';
-    // Correct login check:
-    const user = loginForm.username.value.trim();
-    const pass = loginForm.password.value;
-
-    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+    const username = newBtnText.value.trim() === '' ? loginForm.username.value.trim() : newBtnText.value.trim(); // fallback fix
+    const password = loginForm.password.value;
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       sessionStorage.setItem('loggedIn', 'true');
       showAdminPanel();
       alert('Logged in successfully!');
@@ -406,20 +341,39 @@
     }
   });
 
-  // Add button click
-  addBtn.onclick = (e) => {
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
+    renderButtons();
+  }
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  });
+
+  addBtn.addEventListener('click', e => {
     e.preventDefault();
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     const isEmbed = isEmbedCheckbox.checked;
 
     if (!text) return alert('Please enter button text.');
-    if (!url) return alert('Please enter URL or embed code.');
+    if (!url) return alert('Please enter button URL or embed HTML.');
 
     const buttons = loadButtons();
-    const maxPos = buttons.length > 0 ? Math.max(...buttons.map(b => b.position)) : 0;
+
+    // Generate new unique ID (timestamp)
+    const newId = Date.now();
+
+    // Find max position + 1
+    const maxPos = buttons.reduce((max, b) => b.position > max ? b.position : max, 0);
 
     buttons.push({
+      id: newId,
       text,
       url,
       donate: false,
@@ -436,42 +390,38 @@
     isEmbedCheckbox.checked = false;
 
     alert('Button added!');
-  };
+  });
 
-  // Rearrange button toggles drag mode
-  rearrangeBtn.onclick = (e) => {
-    e.preventDefault();
+  rearrangeBtn.addEventListener('click', () => {
     dragModeEnabled = !dragModeEnabled;
+    rearrangeBtn.textContent = dragModeEnabled ? 'Disable Rearrange' : 'Enable Rearrange';
+
     if (dragModeEnabled) {
-      rearrangeBtn.textContent = 'Disable Rearrange';
       enableDragAndDrop();
-      alert('Drag mode enabled: Drag buttons to rearrange.');
     } else {
-      rearrangeBtn.textContent = 'Enable Rearrange';
-      disableDragAndDrop();
-      alert('Drag mode disabled.');
+      // Remove draggable attribute & event listeners
+      document.querySelectorAll('#buttonGroup a').forEach(a => {
+        a.removeAttribute('draggable');
+        a.style.cursor = 'default';
+        a.removeEventListener('dragstart', dragStart);
+        a.removeEventListener('dragover', dragOver);
+        a.removeEventListener('dragend', dragEnd);
+      });
     }
-  };
+  });
 
-  // View visitors button (redirects)
-  document.getElementById('viewVisitorsBtn').onclick = () => {
-    window.location.href = 'visitors.html';
-  };
+  viewVisitorsBtn.addEventListener('click', () => {
+    alert(visitorCountEl.textContent);
+  });
 
-  // Logout button
-  logoutBtn.onclick = (e) => {
-    e.preventDefault();
-    logout();
-  };
-
-  // Close menu if click outside
-  document.addEventListener('click', (e) => {
+  // Close settings menu if clicking outside
+  document.addEventListener('click', e => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
-  // On load
+  // On page load
   if (sessionStorage.getItem('loggedIn') === 'true') {
     showAdminPanel();
   } else {
