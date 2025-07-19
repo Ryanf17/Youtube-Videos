@@ -159,6 +159,9 @@
       font-size: 1rem;
     }
   </style>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
@@ -193,262 +196,280 @@
 
   <div class="button-group" id="buttonGroup"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Supabase setup
-    const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+<script>
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const buttonGroup = document.getElementById('buttonGroup');
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-    const gearBtn = document.getElementById('gearBtn');
-    const settingsMenu = document.getElementById('settingsMenu');
-    const loginForm = document.getElementById('loginForm');
-    const adminPanel = document.getElementById('adminPanel');
-    const buttonGroup = document.getElementById('buttonGroup');
-    const newBtnText = document.getElementById('newBtnText');
-    const newBtnUrl = document.getElementById('newBtnUrl');
-    const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
-    const rearrangeBtn = document.getElementById('rearrangeBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+  // Admin credentials (replace with environment vars or safer method later)
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-    // Your admin credentials here (will replace with supabase auth later)
-    const ADMIN_USERNAME = 'Ryanf17';
-    const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+  // Supabase init
+  const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Default buttons (always present)
-    const defaultButtons = [
-      { text: 'Home', url: 'index.html', donate: false, isEmbed: false, position: 1 },
-      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false, position: 2 },
-      { text: 'Button 2', url: '#', donate: false, isEmbed: false, position: 3 },
-      { text: 'Button 3', url: '#', donate: false, isEmbed: false, position: 4 },
-      { text: 'Button 4', url: '#', donate: false, isEmbed: false, position: 5 },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false, position: 6 }
+  // Default buttons to always fallback on
+  function getDefaultButtons() {
+    return [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
     ];
+  }
 
-    // This will hold the buttons to render (defaults + Supabase overrides)
-    let buttons = [...defaultButtons];
-
-    // Load buttons from Supabase and merge with defaults
-    async function loadButtons() {
-      try {
-        const { data, error } = await supabase
-          .from('buttons')
-          .select('*')
-          .order('position', { ascending: true });
-
-        if (error) {
-          console.error('Error loading buttons from Supabase:', error);
-          buttons = [...defaultButtons];
-        } else if (data && data.length) {
-          // Map supabase buttons by position for quick lookup
-          const supabaseMap = new Map(data.map(btn => [btn.position, btn]));
-
-          // Merge: override defaults if position matches, otherwise keep default
-          buttons = defaultButtons.map(defBtn => supabaseMap.get(defBtn.position) || defBtn);
-
-          // Add any extra buttons from Supabase beyond the default positions
-          const maxDefaultPos = Math.max(...defaultButtons.map(b => b.position));
-          const extraButtons = data.filter(btn => btn.position > maxDefaultPos);
-          buttons = buttons.concat(extraButtons);
-        } else {
-          buttons = [...defaultButtons];
-        }
-      } catch (err) {
-        console.error('Unexpected error loading buttons:', err);
-        buttons = [...defaultButtons];
-      }
-      renderButtons();
-    }
-
-    // Render buttons on homepage
-    function renderButtons() {
-      buttonGroup.innerHTML = '';
-      buttons.forEach(b => {
-        const a = document.createElement('a');
-        if (b.is_embed || b.isEmbed) {
-          a.href = 'embed.html?video=' + encodeURIComponent(b.url);
-        } else {
-          a.href = b.url;
-        }
-        a.textContent = b.text;
-        a.target = '_blank';
-        if (b.donate) a.classList.add('donate');
-        buttonGroup.appendChild(a);
-      });
-    }
-
-    // Drag & drop rearranging buttons
-    let draggedEl = null;
-    let rearranging = false;
-
-    function dragStart(e) {
-      draggedEl = e.target;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-      draggedEl.classList.add('dragging');
-    }
-
-    function dragOver(e) {
-      e.preventDefault();
-      const target = e.target;
-      if (target && target !== draggedEl && target.tagName === 'A') {
-        const container = target.parentNode;
-        const rect = target.getBoundingClientRect();
-        const next = (e.clientX - rect.left) / rect.width > 0.5;
-        container.insertBefore(draggedEl, next ? target.nextSibling : target);
-      }
-    }
-
-    function dragEnd(e) {
-      draggedEl.classList.remove('dragging');
-      draggedEl = null;
-      // Save new order
-      const updatedButtons = [];
-      document.querySelectorAll('#buttonGroup a').forEach((a, index) => {
-        updatedButtons.push({
-          text: a.textContent,
-          url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
-          donate: a.classList.contains('donate'),
-          isEmbed: a.href.includes('embed.html?video='),
-          position: index + 1
-        });
-      });
-
-      // Update in Supabase — replace whole buttons table or update individually
-      // For simplicity, let's update buttons one by one
-
-      (async () => {
-        // Remove all existing buttons and re-insert updated? Or upsert individually
-        // Let's upsert individually (simple approach)
-
-        for (const btn of updatedButtons) {
-          await supabase.from('buttons').upsert(btn, { onConflict: ['position'] });
-        }
-        buttons = updatedButtons;
-        alert('Buttons rearranged and saved!');
-        rearranging = false;
-        rearrangeBtn.textContent = 'Enable Rearrange';
-        disableDragAndDrop();
-      })();
-    }
-
-    function enableDragAndDrop() {
-      document.querySelectorAll('#buttonGroup a').forEach(a => {
-        a.setAttribute('draggable', true);
-        a.addEventListener('dragstart', dragStart);
-        a.addEventListener('dragover', dragOver);
-        a.addEventListener('dragend', dragEnd);
-      });
-    }
-
-    function disableDragAndDrop() {
-      document.querySelectorAll('#buttonGroup a').forEach(a => {
-        a.removeAttribute('draggable');
-        a.removeEventListener('dragstart', dragStart);
-        a.removeEventListener('dragover', dragOver);
-        a.removeEventListener('dragend', dragEnd);
-      });
-    }
-
-    // Toggle rearranging on button click
-    rearrangeBtn.addEventListener('click', () => {
-      if (!rearranging) {
-        rearranging = true;
-        rearrangeBtn.textContent = 'Disable Rearrange';
-        enableDragAndDrop();
-        alert('Drag the buttons to rearrange their order, then release the drag to save.');
-      } else {
-        rearranging = false;
-        rearrangeBtn.textContent = 'Enable Rearrange';
-        disableDragAndDrop();
-      }
-    });
-
-    // Add button handler
-    document.getElementById('addBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const text = newBtnText.value.trim();
-      const url = newBtnUrl.value.trim();
-      const isEmbed = isEmbedCheckbox.checked;
-
-      if (!text) return alert('Please enter button text.');
-      if (!url) return alert('Please enter button URL or embed URL.');
-
-      // Find next position (max + 1)
-      const nextPosition = buttons.length ? Math.max(...buttons.map(b => b.position)) + 1 : 1;
-
-      const { error } = await supabase.from('buttons').insert([
-        { text, url, donate: false, is_embed: isEmbed, position: nextPosition }
-      ]);
+  // Load buttons from Supabase; if empty or error, fallback to defaults
+  async function loadButtons() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('buttons')
+        .select('*')
+        .order('position', { ascending: true });
 
       if (error) {
-        alert('Error adding button: ' + error.message);
-        return;
+        console.error('Supabase error:', error);
+        return getDefaultButtons();
+      }
+      if (!data || data.length === 0) {
+        return getDefaultButtons();
       }
 
-      await loadButtons();
+      // Map data to expected format, ensure keys are lowercase or matched
+      return data.map(btn => ({
+        text: btn.text || 'No Text',
+        url: btn.url || '#',
+        donate: btn.donate || false,
+        isEmbed: btn.is_embed || false
+      }));
+    } catch (err) {
+      console.error('Load buttons error:', err);
+      return getDefaultButtons();
+    }
+  }
 
+  // Save buttons to Supabase (only admin)
+  async function saveButtons(buttons) {
+    try {
+      // First delete all old buttons to avoid duplicates
+      const { error: deleteError } = await supabaseClient.from('buttons').delete().neq('id', 0);
+      if (deleteError) {
+        console.error('Error deleting old buttons:', deleteError);
+        alert('Error saving buttons');
+        return false;
+      }
+
+      // Insert new buttons, mapping to DB fields
+      const toInsert = buttons.map((btn, index) => ({
+        text: btn.text,
+        url: btn.url,
+        donate: btn.donate,
+        is_embed: btn.isEmbed,
+        position: index
+      }));
+
+      const { error: insertError } = await supabaseClient.from('buttons').insert(toInsert);
+      if (insertError) {
+        console.error('Error inserting buttons:', insertError);
+        alert('Error saving buttons');
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Save buttons exception:', err);
+      alert('Error saving buttons');
+      return false;
+    }
+  }
+
+  // Render buttons on page
+  async function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = await loadButtons();
+    buttons.forEach(b => {
+      const a = document.createElement('a');
+      if (b.isEmbed) {
+        a.href = 'embed.html?video=' + encodeURIComponent(b.url);
+      } else {
+        a.href = b.url;
+      }
+      a.textContent = b.text;
+      a.target = '_blank';
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
+    });
+  }
+
+  // Drag & drop code
+  let draggedEl = null;
+  let rearranging = false;
+
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
+
+  async function dragEnd(e) {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+
+    // Gather new order of buttons from DOM
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        isEmbed: a.href.includes('embed.html?video=')
+      });
+    });
+
+    // Save new order to Supabase
+    const saved = await saveButtons(buttons);
+    if (saved) alert('Buttons rearranged and saved!');
+    else alert('Failed to save buttons.');
+
+    disableDragAndDrop();
+  }
+
+  function enableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  function disableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.removeAttribute('draggable');
+      a.removeEventListener('dragstart', dragStart);
+      a.removeEventListener('dragover', dragOver);
+      a.removeEventListener('dragend', dragEnd);
+    });
+  }
+
+  rearrangeBtn.addEventListener('click', () => {
+    if (!rearranging) {
+      rearranging = true;
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      enableDragAndDrop();
+      alert('Drag the buttons to rearrange their order, then release the drag to save.');
+    } else {
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
+    }
+  });
+
+  // Add button handler
+  document.getElementById('addBtn').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
+
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
+
+    const buttons = await loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+
+    const saved = await saveButtons(buttons);
+    if (saved) {
+      renderButtons();
       newBtnText.value = '';
       newBtnUrl.value = '';
       isEmbedCheckbox.checked = false;
       alert('Button added!');
-    });
-
-    // Logout handler
-    logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('loggedIn');
-      adminPanel.style.display = 'none';
-      loginForm.style.display = 'flex';
-      alert('Logged out.');
-    });
-
-    // View visitors (placeholder)
-    viewVisitorsBtn.addEventListener('click', () => {
-      window.location.href = 'visitors.html'; // Placeholder, implement later
-    });
-
-    // Gear button toggles settings menu
-    gearBtn.addEventListener('click', () => {
-      settingsMenu.classList.toggle('active');
-    });
-
-    // Login form submit handler
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = loginForm.username.value.trim();
-      const password = loginForm.password.value;
-
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        sessionStorage.setItem('loggedIn', 'true');
-        showAdminPanel();
-        alert('Logged in successfully!');
-        settingsMenu.classList.remove('active');
-      } else {
-        alert('Incorrect username or password.');
-      }
-    });
-
-    function showAdminPanel() {
-      loginForm.style.display = 'none';
-      adminPanel.style.display = 'block';
-      renderButtons();
+    } else {
+      alert('Failed to add button.');
     }
+  });
 
-    // Close menu if clicked outside
-    document.addEventListener('click', (e) => {
-      if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
-        settingsMenu.classList.remove('active');
-      }
-    });
+  // Logout handler
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  });
 
-    // On page load
+  // View visitors placeholder
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder for visitors page
+  });
+
+  // Gear button toggles settings menu
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  // Login form submit handler
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+  }
+
+  // Close menu if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+
+  // On page load
+  (async () => {
     if (sessionStorage.getItem('loggedIn') === 'true') {
       showAdminPanel();
-      loadButtons();
     } else {
-      loadButtons();
+      await renderButtons();
     }
-  </script>
+  })();
+</script>
 </body>
 </html>
