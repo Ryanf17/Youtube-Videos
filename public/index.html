@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
-    /* Your existing styles */
     body {
       margin: 0;
       padding: 0;
@@ -160,8 +159,6 @@
       font-size: 1rem;
     }
   </style>
-  <!-- 1. Load Supabase script FIRST -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
@@ -197,16 +194,6 @@
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  // 2. Supabase config and init
-  const SUPABASE_URL = 'https://dhtvzodmctwrdeiliyld.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // 3. Admin credentials
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
-
-  // 4. Elements
   const gearBtn = document.getElementById('gearBtn');
   const settingsMenu = document.getElementById('settingsMenu');
   const loginForm = document.getElementById('loginForm');
@@ -219,7 +206,9 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-  // 5. Default buttons fallback
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
   function getDefaultButtons() {
     return [
       { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
@@ -231,29 +220,23 @@
     ];
   }
 
-  // 6. Load buttons from localStorage or Supabase or defaults
-  function loadButtonsFromLocalStorage() {
+  function loadButtons() {
     const stored = localStorage.getItem('ryansBuildsButtons');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return null;
-      }
-    }
-    return null;
+    if (stored) return JSON.parse(stored);
+    return getDefaultButtons();
   }
 
-  function saveButtonsToLocalStorage(buttons) {
+  function saveButtons(buttons) {
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
-  // 7. Render buttons helper
-  function renderButtons(buttons) {
+  function renderButtons() {
     buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
     buttons.forEach(b => {
       const a = document.createElement('a');
       if (b.isEmbed) {
+        // Pass both video and title for embed page
         a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
       } else {
         a.href = b.url;
@@ -265,44 +248,6 @@
     });
   }
 
-  // 8. Load buttons from Supabase, or fallback to defaults
-  async function loadButtons() {
-    // Try localStorage first
-    let buttons = loadButtonsFromLocalStorage();
-    if (buttons && buttons.length) {
-      renderButtons(buttons);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('buttons')
-        .select('*')
-        .order('id', { ascending: true });
-
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        buttons = getDefaultButtons();
-      } else if (!data || data.length === 0) {
-        buttons = getDefaultButtons();
-      } else {
-        buttons = data.map(row => ({
-          text: row.text,
-          url: row.url,
-          donate: row.donate,
-          isEmbed: row.is_embed
-        }));
-      }
-    } catch (e) {
-      console.error('Unexpected error:', e);
-      buttons = getDefaultButtons();
-    }
-
-    saveButtonsToLocalStorage(buttons);
-    renderButtons(buttons);
-  }
-
-  // 9. Drag and drop for rearranging buttons
   let draggedEl = null;
   let rearranging = false;
 
@@ -336,7 +281,7 @@
         isEmbed: a.href.includes('embed.html?video=')
       });
     });
-    saveButtonsToLocalStorage(buttons);
+    saveButtons(buttons);
     alert('Buttons rearranged and saved!');
     rearranging = false;
     rearrangeBtn.textContent = 'Enable Rearrange';
@@ -374,7 +319,6 @@
     }
   });
 
-  // 10. Add button
   document.getElementById('addBtn').addEventListener('click', (e) => {
     e.preventDefault();
     const text = newBtnText.value.trim();
@@ -384,10 +328,10 @@
     if (!text) return alert('Please enter button text.');
     if (!url) return alert('Please enter button URL or embed URL.');
 
-    const buttons = loadButtonsFromLocalStorage() || [];
+    const buttons = loadButtons();
     buttons.push({ text, url, donate: false, isEmbed });
-    saveButtonsToLocalStorage(buttons);
-    renderButtons(buttons);
+    saveButtons(buttons);
+    renderButtons();
 
     newBtnText.value = '';
     newBtnUrl.value = '';
@@ -395,7 +339,6 @@
     alert('Button added!');
   });
 
-  // 11. Logout
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
@@ -403,17 +346,14 @@
     alert('Logged out.');
   });
 
-  // 12. Visitors button placeholder
   viewVisitorsBtn.addEventListener('click', () => {
-    window.location.href = 'visitors.html'; // Adjust as needed
+    window.location.href = 'visitors.html'; // Placeholder for visitors
   });
 
-  // 13. Gear button toggle settings menu
   gearBtn.addEventListener('click', () => {
     settingsMenu.classList.toggle('active');
   });
 
-  // 14. Login form submit
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = loginForm.username.value.trim();
@@ -429,28 +369,23 @@
     }
   });
 
-  // 15. Show admin panel or login form based on session
   function showAdminPanel() {
     loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
-    const buttons = loadButtonsFromLocalStorage() || getDefaultButtons();
-    renderButtons(buttons);
+    renderButtons();
   }
 
-  // 16. Close settings menu when clicking outside
   document.addEventListener('click', (e) => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
-  // 17. On page load
-  window.addEventListener('DOMContentLoaded', () => {
-    if (sessionStorage.getItem('loggedIn') === 'true') {
-      showAdminPanel();
-    }
-    loadButtons();
-  });
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
+  }
 </script>
 </body>
 </html>
