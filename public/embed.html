@@ -2,198 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ryan's Builds</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Embed Video</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
+      background: #111;
+      color: white;
       font-family: sans-serif;
-      background-color: #111;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       text-align: center;
-      position: relative;
+      padding: 20px;
     }
-
     h1 {
-      font-size: 3rem;
-      margin-bottom: 10px;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
     }
-
     p {
-      max-width: 600px;
-      margin: 20px;
-      font-size: 1.2rem;
-      line-height: 1.5;
+      margin-bottom: 20px;
+      font-size: 1.1rem;
     }
-
-    .button-group {
-      margin-top: 20px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-      max-width: 800px;
-    }
-
-    .button-group a, .button-group .embed {
-      text-decoration: none;
-      color: white;
-      background-color: #444;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: background 0.3s;
-      user-select: none;
-      cursor: grab;
-    }
-
-    .button-group a:hover {
-      background-color: #666;
-    }
-
-    .button-group a.donate {
-      background-color: #28a745;
-      font-weight: bold;
-    }
-    .button-group a.donate:hover {
-      background-color: #218838;
-    }
-
-    .gear-container {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      cursor: pointer;
-      color: white;
-      font-size: 28px;
-      user-select: none;
-      z-index: 1000;
-    }
-
-    .settings-menu {
-      display: none;
-      position: fixed;
-      top: 55px;
-      right: 15px;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 15px;
-      width: 260px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
-      color: white;
-      font-size: 14px;
-      z-index: 1000;
-    }
-
-    .settings-menu.active {
-      display: block;
-    }
-
-    .settings-menu button {
-      display: block;
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-      background: #444;
+    iframe {
+      width: 80vw;
+      height: 45vw;
+      max-width: 900px;
+      max-height: 506px;
       border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .settings-menu button:hover {
-      background: #666;
-    }
-
-    .login-form {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .login-form label {
-      margin: 8px 0 4px;
-      text-align: left;
-      font-size: 14px;
-    }
-
-    .login-form input {
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-
-    .login-form button {
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-
-    .login-form button:hover {
-      background: #218838;
-    }
-
-    #adminPanel .admin-banner {
-      background: #0f0;
-      color: #000;
-      font-weight: bold;
-      padding: 8px;
-      text-align: center;
-      border-radius: 5px;
-      margin-bottom: 10px;
+      border-radius: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+  <h1 id="title">Loading...</h1>
+  <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
+  <iframe id="videoPlayer" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
 
-  <div class="settings-menu" id="settingsMenu">
-    <form id="loginForm" class="login-form">
-      <label for="username">Username</label>
-      <input type="text" id="username" autocomplete="username" required />
-      <label for="password">Password</label>
-      <input type="password" id="password" autocomplete="current-password" required />
-      <button type="submit">Log In</button>
-    </form>
+  <script>
+    // Get query parameters from URL
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('video');
+    const title = params.get('title');
 
-    <div id="adminPanel" style="display:none;">
-      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
-      <label for="newBtnText">Button Text</label>
-      <input type="text" id="newBtnText" placeholder="Button Label">
-      <label for="newBtnUrl">Button URL or Embed HTML</label>
-      <input type="text" id="newBtnUrl" placeholder="https://... or <iframe...>">
-      <label for="newEmbedId">Embed ID (e.g. castle1)</label>
-      <input type="text" id="newEmbedId" placeholder="Required if embed">
-      <label><input type="checkbox" id="isEmbedCheckbox"> This is an embed code</label>
-      <button id="addBtn">Add Button</button>
-      <button id="rearrangeBtn">Enable Rearrange</button>
-      <button onclick="window.location.href='visitors.html'">View Visitors</button>
-      <button id="logoutBtn">Logout</button>
-    </div>
-  </div>
+    // Set title text
+    if (title) {
+      document.getElementById('title').textContent = decodeURIComponent(title);
+    } else {
+      document.getElementById('title').textContent = 'Video';
+    }
 
-  <h1>Ryan's Builds</h1>
-  <p>
-    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
-  </p>
-
-  <div class="button-group" id="buttonGroup"></div>
-
-<script src="/script.js"></script>
+    // Set iframe src to embed URL
+    if (videoUrl) {
+      document.getElementById('videoPlayer').src = decodeURIComponent(videoUrl);
+    } else {
+      document.getElementById('videoPlayer').style.display = 'none';
+      document.querySelector('p').textContent = 'No video URL provided.';
+    }
+  </script>
 </body>
 </html>
