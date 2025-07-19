@@ -4,255 +4,388 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
       background-color: #111;
       color: white;
-      font-family: sans-serif;
-      margin: 0;
-      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
       text-align: center;
+      position: relative;
     }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin-bottom: 10px;
     }
 
     p {
+      max-width: 600px;
+      margin: 20px;
       font-size: 1.2rem;
-      max-width: 700px;
-      margin: auto;
-      margin-bottom: 30px;
       line-height: 1.5;
-      color: #ccc;
     }
 
-    .button {
-      display: block;
-      background-color: #444;
-      color: white;
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+
+    .button-group a {
       text-decoration: none;
-      padding: 14px 20px;
+      color: white;
+      background-color: #444;
+      padding: 10px 20px;
       border-radius: 8px;
-      margin: 10px auto;
-      max-width: 300px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
+      font-size: 1rem;
+      transition: background 0.3s;
+      user-select: none;
+      cursor: grab;
     }
 
-    .button:hover {
+    .button-group a:hover {
       background-color: #666;
     }
 
-    #adminPanel button {
-      margin: 5px;
-      padding: 10px 16px;
-      font-size: 1rem;
+    .button-group a.donate {
+      background-color: #28a745;
+      font-weight: bold;
+    }
+    .button-group a.donate:hover {
+      background-color: #218838;
+    }
+
+    .gear-container {
+      position: fixed;
+      top: 15px;
+      right: 15px;
       cursor: pointer;
-    }
-
-    #adminPanel input {
-      margin: 4px;
-      padding: 6px;
-    }
-
-    #editPanel {
-      display: none;
-      padding: 20px;
-      background-color: #222;
       color: white;
+      font-size: 28px;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    .settings-menu {
+      display: none;
+      position: fixed;
+      top: 55px;
+      right: 15px;
+      background: #222;
+      border: 1px solid #444;
       border-radius: 8px;
-      max-width: 400px;
-      margin: 20px auto;
+      padding: 15px;
+      width: 280px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+      color: white;
+      font-size: 14px;
+      z-index: 1000;
     }
 
-    #editPanel input {
+    .settings-menu.active {
+      display: block;
+    }
+
+    .settings-menu button {
+      display: block;
       width: 100%;
+      margin-bottom: 10px;
       padding: 8px;
-      margin-bottom: 12px;
-      border-radius: 6px;
+      background: #444;
       border: none;
-    }
-
-    #editPanel button {
-      padding: 10px 15px;
-      margin-right: 10px;
-      border-radius: 6px;
-      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+    .settings-menu button:hover {
+      background: #666;
     }
 
-    .green-btn { background-color: #28a745; color: white; }
-    .red-btn { background-color: #dc3545; color: white; }
-    .gray-btn { background-color: #666; color: white; }
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
 
-    #adminPanel {
-      margin-top: 30px;
+    .login-form label {
+      margin: 8px 0 4px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .login-form input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .login-form button {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .login-form button:hover {
+      background: #218838;
+    }
+
+    #adminPanel .admin-banner {
+      background: #28a745;
+      color: #111;
+      font-weight: bold;
+      padding: 8px;
+      text-align: center;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
+  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+
+  <div class="settings-menu" id="settingsMenu">
+    <form id="loginForm" class="login-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required />
+      <button type="submit">Log In</button>
+    </form>
+
+    <div id="adminPanel" style="display:none;">
+      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+      <label for="newBtnText">Button Text</label>
+      <input type="text" id="newBtnText" placeholder="Button Label" />
+      <label for="newBtnUrl">Button URL or Embed URL</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
+      <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
+      <button id="addBtn">Add Button</button>
+      <button id="rearrangeBtn">Enable Rearrange</button>
+      <button id="viewVisitorsBtn">View Visitors</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
   <h1>Ryan's Builds</h1>
-  <p>Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!</p>
+  <p>
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
+  </p>
 
-  <div id="buttonContainer"></div>
+  <div class="button-group" id="buttonGroup"></div>
 
-  <div id="adminPanel">
-    <h2>Admin Panel</h2>
-    <input type="text" id="newButtonText" placeholder="Button Name" />
-    <input type="text" id="newButtonUrl" placeholder="Video URL or link" />
-    <label><input type="checkbox" id="newButtonEmbed" /> Embed</label>
-    <button onclick="addButton()">Add Button</button>
-    <button onclick="startEditDelete()">Edit/Delete</button>
-  </div>
+<script>
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const buttonGroup = document.getElementById('buttonGroup');
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-  <div id="editPanel">
-    <h2>Edit/Delete Panel</h2>
-    <label>Button Name:</label>
-    <input type="text" id="editButtonText" />
-    <label>Video ID or URL:</label>
-    <input type="text" id="editVideoUrl" />
-    <button class="green-btn" onclick="confirmEdit()">✅ Confirm Changes</button>
-    <button class="red-btn" onclick="deleteButton()">🗑️ Delete</button>
-    <button class="gray-btn" onclick="cancelEdit()">← Back</button>
-  </div>
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  <script>
-    const supabase = supabase.createClient(
-      "https://dhvzodmctwrdeiliiyld.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E"
-    );
+  function getDefaultButtons() {
+    return [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
+    ];
+  }
 
-    let editMode = false;
-    let buttonToEdit = null;
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) return JSON.parse(stored);
+    return getDefaultButtons();
+  }
 
-    async function loadButtons() {
-      const { data, error } = await supabase
-        .from("buttons")
-        .select("*")
-        .order("position", { ascending: true });
+  function saveButtons(buttons) {
+    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+  }
 
-      if (error || !data) {
-        console.error("Supabase load error or empty, falling back to defaults.", error);
-        return;
+  function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach(b => {
+      const a = document.createElement('a');
+      if (b.isEmbed) {
+        // Pass both video and title for embed page
+        a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
+      } else {
+        a.href = b.url;
       }
+      a.textContent = b.text;
+      a.target = '_blank';
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
+    });
+  }
 
-      renderButtons(data);
+  let draggedEl = null;
+  let rearranging = false;
+
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
     }
+  }
 
-    function renderButtons(buttons) {
-      const container = document.getElementById("buttonContainer");
-      container.innerHTML = "";
-
-      buttons.forEach(button => {
-        const btn = document.createElement("div");
-        btn.className = "button";
-        btn.textContent = button.text;
-        btn.onclick = () => handleButtonClick(button);
-        container.appendChild(btn);
+  function dragEnd(e) {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        isEmbed: a.href.includes('embed.html?video=')
       });
+    });
+    saveButtons(buttons);
+    alert('Buttons rearranged and saved!');
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+    disableDragAndDrop();
+  }
+
+  function enableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  function disableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.removeAttribute('draggable');
+      a.removeEventListener('dragstart', dragStart);
+      a.removeEventListener('dragover', dragOver);
+      a.removeEventListener('dragend', dragEnd);
+    });
+  }
+
+  rearrangeBtn.addEventListener('click', () => {
+    if (!rearranging) {
+      rearranging = true;
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      enableDragAndDrop();
+      alert('Drag the buttons to rearrange their order, then release the drag to save.');
+    } else {
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
     }
+  });
 
-    function handleButtonClick(button) {
-      if (editMode) {
-        buttonToEdit = button;
-        document.getElementById("editButtonText").value = button.text;
-        document.getElementById("editVideoUrl").value = button.url;
-        document.getElementById("adminPanel").style.display = "none";
-        document.getElementById("editPanel").style.display = "block";
-        editMode = false;
-      } else {
-        if (button.is_embed) {
-          window.location.href = `embed.html?title=${encodeURIComponent(button.text)}&video=${encodeURIComponent(button.url)}`;
-        } else {
-          window.open(button.url, "_blank");
-        }
-      }
+  document.getElementById('addBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
+
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
+
+    const buttons = loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+    saveButtons(buttons);
+    renderButtons();
+
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    alert('Button added!');
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  });
+
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder for visitors
+  });
+
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
     }
+  });
 
-    async function addButton() {
-      const text = document.getElementById("newButtonText").value.trim();
-      const url = document.getElementById("newButtonUrl").value.trim();
-      const is_embed = document.getElementById("newButtonEmbed").checked;
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+  }
 
-      if (!text || !url) {
-        alert("Please fill out both fields.");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("buttons")
-        .insert([{ text, url, is_embed, position: Date.now() }]);
-
-      if (error) {
-        console.error("Error inserting button:", error);
-        alert("Failed to add button.");
-      } else {
-        loadButtons();
-        document.getElementById("newButtonText").value = "";
-        document.getElementById("newButtonUrl").value = "";
-        document.getElementById("newButtonEmbed").checked = false;
-      }
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
     }
+  });
 
-    function startEditDelete() {
-      alert("Please click on the button you want to Edit/Delete.");
-      editMode = true;
-    }
-
-    async function confirmEdit() {
-      if (!buttonToEdit) return;
-      const text = document.getElementById("editButtonText").value.trim();
-      const url = document.getElementById("editVideoUrl").value.trim();
-
-      if (!text || !url) {
-        alert("Fields cannot be empty.");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("buttons")
-        .update({ text, url })
-        .eq("id", buttonToEdit.id);
-
-      if (error) {
-        console.error("Update error:", error);
-        alert("Failed to update.");
-      } else {
-        alert("Button updated.");
-        location.reload();
-      }
-    }
-
-    async function deleteButton() {
-      if (!buttonToEdit) return;
-
-      if (confirm("Delete this button?")) {
-        const { error } = await supabase
-          .from("buttons")
-          .delete()
-          .eq("id", buttonToEdit.id);
-
-        if (error) {
-          console.error("Delete error:", error);
-          alert("Failed to delete.");
-        } else {
-          alert("Deleted.");
-          location.reload();
-        }
-      }
-    }
-
-    function cancelEdit() {
-      document.getElementById("editPanel").style.display = "none";
-      document.getElementById("adminPanel").style.display = "block";
-      buttonToEdit = null;
-    }
-
-    loadButtons();
-  </script>
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
+  }
+</script>
 </body>
 </html>
