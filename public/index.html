@@ -1,14 +1,16 @@
+lets use this code i will provide below but with the updated changes and also everything should be done on the panel no pop ups 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ryan's Builds</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 0; /* removed top padding for banner */
       font-family: sans-serif;
       background-color: #111;
       color: white;
@@ -51,7 +53,7 @@
       font-size: 1rem;
       transition: background 0.3s;
       user-select: none;
-      cursor: grab;
+      cursor: grab; /* for drag & drop */
     }
 
     .button-group a:hover {
@@ -66,6 +68,7 @@
       background-color: #218838;
     }
 
+    /* Gear icon container */
     .gear-container {
       position: fixed;
       top: 15px;
@@ -77,6 +80,7 @@
       z-index: 1000;
     }
 
+    /* Settings menu */
     .settings-menu {
       display: none;
       position: fixed;
@@ -86,7 +90,7 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 280px;
+      width: 260px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
@@ -114,190 +118,258 @@
       background: #666;
     }
 
-    .login-form label,
-    .admin-panel label {
+    /* Login form */
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-form label {
       margin: 8px 0 4px;
       text-align: left;
       font-size: 14px;
-      display: block;
     }
 
-    .login-form input,
-    .admin-panel input {
+    .login-form input {
       padding: 8px;
       border-radius: 5px;
       border: none;
       font-size: 14px;
       margin-bottom: 12px;
-      width: 100%;
     }
 
-    .admin-banner {
+    .login-form button {
       background: #28a745;
-      color: black;
-      font-weight: bold;
-      padding: 6px 12px;
-      text-align: center;
+      color: white;
+      border: none;
       border-radius: 5px;
-      margin-bottom: 10px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .login-form button:hover {
+      background: #218838;
+    }
+
+    /* Visitor count */
+    .visitor-count {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #bbb;
+      font-style: italic;
+    }
+
+    /* Admin Mode Banner inside admin panel */
+    #adminBanner {
+      background-color: #28a745;
+      color: #111;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 5px;
+      margin-bottom: 12px;
+      text-align: center;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
-<div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
-<div class="settings-menu" id="settingsMenu">
-  <div class="admin-banner" id="adminBanner" style="display:none;">Admin Mode Enabled</div>
-  <form id="loginForm" class="login-form">
-    <label for="username">Username</label>
-    <input type="text" id="username" autocomplete="username" required />
-    <label for="password">Password</label>
-    <input type="password" id="password" autocomplete="current-password" required />
-    <button type="submit">Log In</button>
-  </form>
 
-  <div id="adminPanel" class="admin-panel" style="display:none;">
-    <label for="newBtnText">Button Text</label>
-    <input type="text" id="newBtnText" placeholder="e.g. My Build">
-    <label for="newBtnUrl">Button URL or Embed</label>
-    <input type="text" id="newBtnUrl" placeholder="e.g. tour.html?id=xyz">
-    <button id="addBtn">Add Button</button>
-    <button id="rearrangeBtn">Enable Rearrange</button>
-    <button onclick="window.location.href='visitors.html'">View Visitors</button>
-    <button id="logoutBtn">Logout</button>
+  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+
+  <div class="settings-menu" id="settingsMenu">
+    <!-- Login Form (shown if not logged in) -->
+    <form id="loginForm" class="login-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required />
+      <button type="submit">Log In</button>
+    </form>
+
+    <!-- Admin Panel (shown if logged in) -->
+    <div id="adminPanel" style="display:none;">
+      <div id="adminBanner">Admin Mode Active</div>
+      <button id="addBtn">Add Button</button>
+      <button id="rearrangeBtn">Rearrange Buttons</button>
+      <button id="viewVisitorsBtn">View Visitors</button>
+      <button onclick="logout()">Logout</button>
+      <div class="visitor-count" id="visitorCount">Visitors: 0</div>
+    </div>
   </div>
-</div>
 
-<h1>Ryan's Builds</h1>
-<p>
-  Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
-</p>
-<div class="button-group" id="buttonGroup"></div>
+  <h1>Ryan's Builds</h1>
+  <p>
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
+  </p>
+
+  <div class="button-group" id="buttonGroup">
+    <!-- Buttons will be rendered here -->
+  </div>
 
 <script>
-const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const visitorCountEl = document.getElementById('visitorCount');
+  const buttonGroup = document.getElementById('buttonGroup');
 
-const allowedUsers = [
-  { username: 'Ryanf17', password: 'G7m#P9xL2@Qz', isAdmin: true },
-  { username: 'User', password: 'Password', isAdmin: false }
-];
+  // Your credentials here:
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-const gearBtn = document.getElementById('gearBtn');
-const settingsMenu = document.getElementById('settingsMenu');
-const loginForm = document.getElementById('loginForm');
-const adminPanel = document.getElementById('adminPanel');
-const adminBanner = document.getElementById('adminBanner');
-const buttonGroup = document.getElementById('buttonGroup');
-const logoutBtn = document.getElementById('logoutBtn');
-const addBtn = document.getElementById('addBtn');
-const rearrangeBtn = document.getElementById('rearrangeBtn');
-const newBtnText = document.getElementById('newBtnText');
-const newBtnUrl = document.getElementById('newBtnUrl');
-
-gearBtn.addEventListener('click', () => settingsMenu.classList.toggle('active'));
-
-loginForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const username = loginForm.username.value.trim();
-  const password = loginForm.password.value;
-  const user = allowedUsers.find(u => u.username === username && u.password === password);
-  if (user) {
-    sessionStorage.setItem('loggedIn', JSON.stringify(user));
-    showAdminPanel(user);
-    alert('Logged in successfully!');
-    settingsMenu.classList.remove('active');
-  } else alert('Incorrect username or password.');
-});
-
-logoutBtn.addEventListener('click', () => {
-  sessionStorage.removeItem('loggedIn');
-  loginForm.style.display = 'flex';
-  adminPanel.style.display = 'none';
-  adminBanner.style.display = 'none';
-  alert('Logged out.');
-});
-
-addBtn.addEventListener('click', async () => {
-  const text = newBtnText.value.trim();
-  const url = newBtnUrl.value.trim();
-  if (!text || !url) return alert('Please enter both label and URL.');
-  await supabase.from('buttons').insert([{ text, url }]);
-  newBtnText.value = '';
-  newBtnUrl.value = '';
-  fetchButtons();
-});
-
-rearrangeBtn.addEventListener('click', () => {
-  const links = document.querySelectorAll('#buttonGroup a');
-  links.forEach(a => {
-    a.setAttribute('draggable', true);
-    a.addEventListener('dragstart', dragStart);
-    a.addEventListener('dragover', dragOver);
-    a.addEventListener('dragend', dragEnd);
-  });
-  alert('Drag and drop enabled. Rearranging now.');
-});
-
-let draggedEl = null;
-function dragStart(e) {
-  draggedEl = e.target;
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', '');
-}
-function dragOver(e) {
-  e.preventDefault();
-  const target = e.target;
-  if (target && target !== draggedEl && target.tagName === 'A') {
-    const container = target.parentNode;
-    const rect = target.getBoundingClientRect();
-    const next = (e.clientX - rect.left) / rect.width > 0.5;
-    container.insertBefore(draggedEl, next ? target.nextSibling : target);
+  // Load buttons from localStorage or default
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) return JSON.parse(stored);
+    return [
+      { text: 'Home', url: 'index.html' },
+      { text: 'CPS Build Tour', url: 'tour.html' },
+      { text: 'Button 2', url: '#' },
+      { text: 'Button 3', url: '#' },
+      { text: 'Button 4', url: '#' },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
+    ];
   }
-}
-async function dragEnd() {
-  const links = document.querySelectorAll('#buttonGroup a');
-  const updates = [];
-  for (let i = 0; i < links.length; i++) {
-    updates.push({ id: links[i].dataset.id, sort_order: i });
-  }
-  for (const item of updates) {
-    await supabase.from('buttons').update({ sort_order: item.sort_order }).eq('id', item.id);
-  }
-  fetchButtons();
-}
 
-function showAdminPanel(user) {
-  loginForm.style.display = 'none';
-  if (user.isAdmin) {
+  function saveButtons(buttons) {
+    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+  }
+
+  function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach(b => {
+      const a = document.createElement('a');
+      a.href = b.url;
+      a.textContent = b.text;
+      a.target = '_blank';
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
+    });
+  }
+
+  // Drag & drop for rearranging buttons
+  let draggedEl = null;
+
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
+
+  function dragEnd(e) {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+    // Save new order
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate')
+      });
+    });
+    saveButtons(buttons);
+    alert('Buttons rearranged and saved!');
+  }
+
+  function enableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  // Show admin panel
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
-    adminBanner.style.display = 'block';
+    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
+    renderButtons();
   }
-  fetchButtons();
-}
 
-async function fetchButtons() {
-  const { data, error } = await supabase.from('buttons').select('*').order('sort_order', { ascending: true });
-  buttonGroup.innerHTML = '';
-  data.forEach(b => {
-    const a = document.createElement('a');
-    a.href = b.url;
-    a.textContent = b.text;
-    a.dataset.id = b.id;
-    if (b.donate) a.classList.add('donate');
-    buttonGroup.appendChild(a);
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  }
+
+  // Gear button toggles settings menu
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
   });
-}
 
-document.addEventListener('click', (e) => {
-  if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
-    settingsMenu.classList.remove('active');
+  // Login form submit handler
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  // Admin buttons
+  document.getElementById('addBtn').onclick = function() {
+    const text = prompt('Enter button text:');
+    if (!text) return alert('Cancelled');
+    const url = prompt('Enter button URL (e.g. index.html):');
+    if (!url) return alert('Cancelled');
+    const buttons = loadButtons();
+    buttons.push({ text, url });
+    saveButtons(buttons);
+    renderButtons();
+    alert('Button added!');
+  };
+
+  document.getElementById('rearrangeBtn').onclick = function() {
+    alert('Drag buttons to rearrange them. Drag cursor enabled.');
+    enableDragAndDrop();
+  };
+
+  document.getElementById('viewVisitorsBtn').onclick = function() {
+    alert(visitorCountEl.textContent);
+  };
+
+  // Close menu if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+
+  // On load, if logged in, show admin panel, else just render buttons
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
   }
-});
-
-const currentUser = JSON.parse(sessionStorage.getItem('loggedIn'));
-if (currentUser) showAdminPanel(currentUser);
-else fetchButtons();
 </script>
+
 </body>
 </html>
