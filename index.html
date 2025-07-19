@@ -7,28 +7,50 @@
   <style>
     body {
       margin: 0;
-      background: #000;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
     }
-    iframe {
-      max-width: 100%;
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 1080px;
+      padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    }
+
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       border: none;
     }
   </style>
 </head>
 <body>
-  <iframe
-    width="1840"
-    height="828"
-    src="https://www.youtube.com/embed/bvd8hj8Z_n8"
-    title="CPS ROCITIZENS TOUR"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    referrerpolicy="strict-origin-when-cross-origin"
-    allowfullscreen>
-  </iframe>
+  <h1>CPS Rocitizens Tour</h1>
+  <div class="video-container">
+    <iframe
+      src="https://www.youtube.com/embed/bvd8hj8Z_n8"
+      title="CPS ROCITIZENS TOUR"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allowfullscreen>
+    </iframe>
+  </div>
 </body>
 </html>
