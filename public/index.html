@@ -151,19 +151,19 @@
       background: #0f0;
       color: #000;
       font-weight: bold;
-      width: 100%;
       padding: 8px;
       text-align: center;
       display: none;
+      border-radius: 5px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
-  <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
-
   <div class="settings-menu" id="settingsMenu">
+    <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
       <input type="text" id="username" autocomplete="username" required />
@@ -179,6 +179,7 @@
       <input type="text" id="newBtnUrl" placeholder="https://...">
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Rearrange Buttons</button>
+      <button id="clearBtn">Remove All</button>
       <button onclick="window.location.href='visitors.html'">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
@@ -203,6 +204,8 @@
   const buttonGroup = document.getElementById('buttonGroup');
   const logoutBtn = document.getElementById('logoutBtn');
   const addBtn = document.getElementById('addBtn');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const clearBtn = document.getElementById('clearBtn');
   const newBtnText = document.getElementById('newBtnText');
   const newBtnUrl = document.getElementById('newBtnUrl');
 
@@ -260,6 +263,17 @@
     renderButtons();
   });
 
+  rearrangeBtn.addEventListener('click', () => {
+    alert('Drag and drop rearrangement not yet implemented.');
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (confirm('Remove all custom buttons?')) {
+      localStorage.removeItem('ryButtons');
+      renderButtons();
+    }
+  });
+
   function getSavedButtons() {
     return JSON.parse(localStorage.getItem('ryButtons') || '[]');
   }
@@ -273,12 +287,22 @@
       if (b.donate) a.classList.add('donate');
       buttonGroup.appendChild(a);
     });
-    getSavedButtons().forEach(b => {
+    getSavedButtons().forEach((b, i) => {
       const a = document.createElement('a');
       a.href = b.url;
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
+      // Right-click to remove
+      a.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        if (confirm(`Remove button "${b.text}"?`)) {
+          const saved = getSavedButtons();
+          saved.splice(i, 1);
+          localStorage.setItem('ryButtons', JSON.stringify(saved));
+          renderButtons();
+        }
+      });
       buttonGroup.appendChild(a);
     });
   }
