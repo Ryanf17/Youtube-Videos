@@ -206,7 +206,17 @@
   const newBtnText = document.getElementById('newBtnText');
   const newBtnUrl = document.getElementById('newBtnUrl');
 
+  const defaultButtons = [
+    { text: 'Home', url: 'index.html' },
+    { text: 'CPS Build Tour', url: 'tour.html' },
+    { text: 'Button 2', url: '#' },
+    { text: 'Button 3', url: '#' },
+    { text: 'Button 4', url: '#' },
+    { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
+  ];
+
   if (sessionStorage.getItem('loggedIn') === 'true') showAdminPanel();
+  else renderButtons();
 
   gearBtn.addEventListener('click', () => settingsMenu.classList.toggle('active'));
 
@@ -242,30 +252,32 @@
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     if (!text || !url) return alert('Please enter both label and URL.');
-    const a = document.createElement('a');
-    a.textContent = text;
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    buttonGroup.appendChild(a);
+    const saved = getSavedButtons();
+    saved.push({ text, url });
+    localStorage.setItem('ryButtons', JSON.stringify(saved));
     newBtnText.value = '';
     newBtnUrl.value = '';
+    renderButtons();
   });
 
+  function getSavedButtons() {
+    return JSON.parse(localStorage.getItem('ryButtons') || '[]');
+  }
+
   function renderButtons() {
-    const buttons = [
-      { text: 'Home', url: 'index.html' },
-      { text: 'CPS Build Tour', url: 'tour.html' },
-      { text: 'Button 2', url: '#' },
-      { text: 'Button 3', url: '#' },
-      { text: 'Button 4', url: '#' },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
-    ];
     buttonGroup.innerHTML = '';
-    buttons.forEach(b => {
+    defaultButtons.forEach(b => {
       const a = document.createElement('a');
       a.href = b.url;
       a.textContent = b.text;
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
+    });
+    getSavedButtons().forEach(b => {
+      const a = document.createElement('a');
+      a.href = b.url;
+      a.textContent = b.text;
+      a.target = '_blank';
       if (b.donate) a.classList.add('donate');
       buttonGroup.appendChild(a);
     });
