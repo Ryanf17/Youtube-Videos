@@ -11,23 +11,26 @@
       font-family: sans-serif;
       background-color: #111;
       color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       text-align: center;
-      position: relative;
+      min-height: 100vh;
+    }
+
+    .admin-banner {
+      background: #222;
+      color: #0f0;
+      padding: 8px;
+      font-weight: bold;
+      display: none;
     }
 
     h1 {
       font-size: 3rem;
-      margin-bottom: 10px;
+      margin: 20px 0 10px;
     }
 
     p {
       max-width: 600px;
-      margin: 20px;
+      margin: 10px auto;
       font-size: 1.2rem;
       line-height: 1.5;
     }
@@ -39,6 +42,8 @@
       flex-wrap: wrap;
       justify-content: center;
       max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .button-group a {
@@ -49,7 +54,6 @@
       border-radius: 8px;
       font-size: 1rem;
       transition: background 0.3s;
-      user-select: none;
     }
 
     .button-group a:hover {
@@ -60,6 +64,7 @@
       background-color: #28a745;
       font-weight: bold;
     }
+
     .button-group a.donate:hover {
       background-color: #218838;
     }
@@ -71,7 +76,6 @@
       cursor: pointer;
       color: white;
       font-size: 28px;
-      user-select: none;
       z-index: 1000;
     }
 
@@ -95,8 +99,17 @@
       display: block;
     }
 
+    .settings-menu input {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      background: #333;
+      color: white;
+    }
+
     .settings-menu button {
-      display: block;
       width: 100%;
       margin-bottom: 10px;
       padding: 8px;
@@ -108,78 +121,30 @@
       cursor: pointer;
       transition: background 0.3s;
     }
+
     .settings-menu button:hover {
       background: #666;
-    }
-
-    .login-form {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .login-form label {
-      margin: 8px 0 4px;
-      text-align: left;
-      font-size: 14px;
-    }
-
-    .login-form input {
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-
-    .login-form button {
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-
-    .login-form button:hover {
-      background: #218838;
-    }
-
-    .admin-banner {
-      background: #0f0;
-      color: #000;
-      font-weight: bold;
-      width: 100%;
-      padding: 8px;
-      text-align: center;
-      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
   <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+  <div class="gear-container" id="gearBtn">&#9881;</div>
 
   <div class="settings-menu" id="settingsMenu">
-    <form id="loginForm" class="login-form">
-      <label for="username">Username</label>
-      <input type="text" id="username" autocomplete="username" required />
-      <label for="password">Password</label>
-      <input type="password" id="password" autocomplete="current-password" required />
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
       <button type="submit">Log In</button>
     </form>
 
     <div id="adminPanel" style="display:none;">
-      <label for="newBtnText">Button Text</label>
-      <input type="text" id="newBtnText" placeholder="Button Label">
-      <label for="newBtnUrl">Button URL</label>
-      <input type="text" id="newBtnUrl" placeholder="https://...">
+      <input type="text" id="newBtnText" placeholder="New Button Text" />
+      <input type="text" id="newBtnUrl" placeholder="New Button URL" />
       <button id="addBtn">Add Button</button>
-      <button onclick="alert('Rearrange coming soon!')">Rearrange Buttons</button>
-      <button onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button onclick="alert('Rearrange coming soon')">Rearrange Buttons</button>
+      <button onclick="location.href='visitors.html'">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
   </div>
@@ -198,71 +163,79 @@
     <a href="https://plsdonate.me/ryfo_17" class="donate" target="_blank" rel="noopener noreferrer">Donate</a>
   </div>
 
-<script>
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+  <script>
+    const gearBtn = document.getElementById('gearBtn');
+    const settingsMenu = document.getElementById('settingsMenu');
+    const loginForm = document.getElementById('loginForm');
+    const adminPanel = document.getElementById('adminPanel');
+    const buttonGroup = document.getElementById('buttonGroup');
+    const adminBanner = document.getElementById('adminBanner');
 
-  const gearBtn = document.getElementById('gearBtn');
-  const settingsMenu = document.getElementById('settingsMenu');
-  const loginForm = document.getElementById('loginForm');
-  const adminPanel = document.getElementById('adminPanel');
-  const adminBanner = document.getElementById('adminBanner');
-  const buttonGroup = document.getElementById('buttonGroup');
-  const logoutBtn = document.getElementById('logoutBtn');
-  const addBtn = document.getElementById('addBtn');
-  const newBtnText = document.getElementById('newBtnText');
-  const newBtnUrl = document.getElementById('newBtnUrl');
+    const addBtn = document.getElementById('addBtn');
+    const newBtnText = document.getElementById('newBtnText');
+    const newBtnUrl = document.getElementById('newBtnUrl');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-  if (sessionStorage.getItem('loggedIn') === 'true') showAdminPanel();
+    const ADMIN_USERNAME = 'Ryanf17';
+    const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  gearBtn.addEventListener('click', () => settingsMenu.classList.toggle('active'));
-
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = loginForm.username.value.trim();
-    const password = loginForm.password.value;
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('loggedIn', 'true');
+    if (sessionStorage.getItem('loggedIn') === 'true') {
       showAdminPanel();
-      alert('Logged in successfully!');
-      settingsMenu.classList.remove('active');
-    } else alert('Incorrect username or password.');
-  });
-
-  logoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem('loggedIn');
-    loginForm.style.display = 'flex';
-    adminPanel.style.display = 'none';
-    adminBanner.style.display = 'none';
-    alert('Logged out.');
-  });
-
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    adminBanner.style.display = 'block';
-  }
-
-  addBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const text = newBtnText.value.trim();
-    const url = newBtnUrl.value.trim();
-    if (!text || !url) return alert('Please enter both label and URL.');
-    const a = document.createElement('a');
-    a.textContent = text;
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    buttonGroup.appendChild(a);
-    newBtnText.value = '';
-    newBtnUrl.value = '';
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
-      settingsMenu.classList.remove('active');
     }
-  });
-</script>
+
+    gearBtn.onclick = () => {
+      settingsMenu.classList.toggle('active');
+    };
+
+    loginForm.onsubmit = (e) => {
+      e.preventDefault();
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+        sessionStorage.setItem('loggedIn', 'true');
+        showAdminPanel();
+        settingsMenu.classList.remove('active');
+      } else {
+        alert('Incorrect login');
+      }
+    };
+
+    function showAdminPanel() {
+      loginForm.style.display = 'none';
+      adminPanel.style.display = 'block';
+      adminBanner.style.display = 'block';
+    }
+
+    logoutBtn.onclick = () => {
+      sessionStorage.removeItem('loggedIn');
+      loginForm.style.display = 'block';
+      adminPanel.style.display = 'none';
+      adminBanner.style.display = 'none';
+    };
+
+    addBtn.onclick = () => {
+      const text = newBtnText.value.trim();
+      const url = newBtnUrl.value.trim();
+      if (text && url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.textContent = text;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        buttonGroup.appendChild(a);
+        newBtnText.value = '';
+        newBtnUrl.value = '';
+      } else {
+        alert('Enter both text and URL');
+      }
+    };
+
+    document.addEventListener('click', (e) => {
+      if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+        settingsMenu.classList.remove('active');
+      }
+    });
+  </script>
+
 </body>
 </html>
