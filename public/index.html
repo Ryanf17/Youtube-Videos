@@ -50,6 +50,7 @@
       font-size: 1rem;
       transition: background 0.3s;
       user-select: none;
+      cursor: grab;
     }
 
     .button-group a:hover {
@@ -178,7 +179,7 @@
       <label for="newBtnUrl">Button URL</label>
       <input type="text" id="newBtnUrl" placeholder="https://...">
       <button id="addBtn">Add Button</button>
-      <button id="rearrangeBtn">Rearrange Buttons</button>
+      <button id="rearrangeBtn">Enable Rearrange</button>
       <button onclick="window.location.href='visitors.html'">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
@@ -261,8 +262,43 @@
   });
 
   rearrangeBtn.addEventListener('click', () => {
-    alert('Drag and drop rearrangement coming soon.');
+    const links = document.querySelectorAll('#buttonGroup a');
+    links.forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+    alert('Drag and drop enabled. You can now rearrange the buttons.');
   });
+
+  let draggedEl = null;
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  }
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
+  function dragEnd() {
+    const newButtons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      newButtons.push({
+        text: a.textContent,
+        url: a.href,
+        donate: a.classList.contains('donate')
+      });
+    });
+    localStorage.setItem('ryButtons', JSON.stringify(newButtons.filter(b => b.text !== 'Home' && b.text !== 'CPS Build Tour' && b.text !== 'Donate')));
+  }
 
   function getSavedButtons() {
     return JSON.parse(localStorage.getItem('ryButtons') || '[]');
@@ -283,15 +319,10 @@
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
-      a.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        if (confirm(`Remove button "${b.text}"?`)) {
-          const saved = getSavedButtons();
-          saved.splice(i, 1);
-          localStorage.setItem('ryButtons', JSON.stringify(saved));
-          renderButtons();
-        }
-      });
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
       buttonGroup.appendChild(a);
     });
   }
