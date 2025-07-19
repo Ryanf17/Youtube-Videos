@@ -266,8 +266,8 @@
     }
   </style>
 
-  <!-- Supabase client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase client v1 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.35.7/dist/supabase.min.js"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
@@ -350,7 +350,7 @@
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  // Your default buttons - always shown
+  // Your default buttons - used if Supabase is empty (should only be inserted once)
   const defaultButtons = [
     { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
     { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
@@ -370,7 +370,7 @@
     const { data, error } = await supabase
       .from('buttons')
       .select('*')
-      .order('id', { ascending: true });
+      .order('order', { ascending: true });
 
     if (error) {
       alert('Error loading buttons from database: ' + error.message);
@@ -379,36 +379,45 @@
     return data;
   }
 
-  // --- Load buttons: merge fetched with defaults (no duplicates by text) ---
+  // --- Insert default buttons to Supabase (run only if empty) ---
+  async function insertDefaults() {
+    const inserts = defaultButtons.map(btn => ({
+      text: btn.text,
+      url: btn.url,
+      donate: btn.donate,
+      is_embed: btn.isEmbed,
+      order: 0 // Will be updated later
+    }));
+    // Assign order indices
+    inserts.forEach((btn, i) => btn.order = i);
+    const { error } = await supabase.from('buttons').insert(inserts);
+    if (error) {
+      alert('Error inserting default buttons: ' + error.message);
+      return false;
+    }
+    return true;
+  }
+
+  // --- Load buttons either from Supabase or fallback to defaults ---
   async function loadButtons() {
     let data = await fetchButtons();
-    if (!data) data = [];
-
-    const fetchedButtons = data.map(b => ({
+    if (!data || data.length === 0) {
+      // No buttons found, insert defaults then reload
+      const success = await insertDefaults();
+      if (success) {
+        data = await fetchButtons();
+      } else {
+        data = [];
+      }
+    }
+    buttons = data.map(b => ({
       id: b.id,
       text: b.text,
       url: b.url,
       donate: b.donate,
       isEmbed: b.is_embed,
+      order: b.order
     }));
-
-    // Merge default buttons, add only if not already in fetchedButtons by text
-    const mergedButtons = [...fetchedButtons];
-
-    defaultButtons.forEach(defaultBtn => {
-      const exists = fetchedButtons.some(b => b.text === defaultBtn.text);
-      if (!exists) {
-        mergedButtons.push({
-          id: null, // no id — not saved in DB
-          text: defaultBtn.text,
-          url: defaultBtn.url,
-          donate: defaultBtn.donate,
-          isEmbed: defaultBtn.isEmbed,
-        });
-      }
-    });
-
-    buttons = mergedButtons;
     renderButtons();
   }
 
@@ -416,16 +425,13 @@
   async function saveButtonsOrder() {
     for (let i = 0; i < buttons.length; i++) {
       const btn = buttons[i];
-      // Only save if it has an ID (is in DB)
-      if (btn.id !== null) {
-        const { error } = await supabase
-          .from('buttons')
-          .update({ order: i })
-          .eq('id', btn.id);
-        if (error) {
-          alert('Error saving button order: ' + error.message);
-          return;
-        }
+      const { error } = await supabase
+        .from('buttons')
+        .update({ order: i })
+        .eq('id', btn.id);
+      if (error) {
+        alert('Error saving button order: ' + error.message);
+        return;
       }
     }
   }
@@ -443,7 +449,7 @@
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
-      if (editDeleteMode && b.id !== null) a.classList.add('admin-editable');
+      if (editDeleteMode) a.classList.add('admin-editable');
       else a.classList.remove('admin-editable');
       a.dataset.id = b.id;
       buttonGroup.appendChild(a);
@@ -456,8 +462,7 @@
   async function addButton(text, url, isEmbed) {
     const { data, error } = await supabase
       .from('buttons')
-      .insert([{ text, url, is_embed: isEmbed, donate: false }])
-      .select()
+      .insert([{ text, url, is_embed: isEmbed, donate: false, order: buttons.length }])
       .single();
 
     if (error) {
@@ -469,7 +474,8 @@
       text: data.text,
       url: data.url,
       donate: data.donate,
-      isEmbed: data.is_embed
+      isEmbed: data.is_embed,
+      order: data.order
     });
     renderButtons();
     return true;
@@ -486,22 +492,23 @@
       alert('Error updating button: ' + error.message);
       return false;
     }
-    const idx = buttons.findIndex(b => b.id === id);
-    if (idx !== -1) {
-      buttons[idx].text = text;
-      buttons[idx].url = url;
-      buttons[idx].isEmbed = isEmbed;
+    const btn = buttons.find(b => b.id === id);
+    if (btn) {
+      btn.text = text;
+      btn.url = url;
+      btn.isEmbed = isEmbed;
     }
     renderButtons();
     return true;
   }
 
-  // --- Delete button in Supabase ---
+  // --- Delete button from Supabase ---
   async function deleteButton(id) {
     const { error } = await supabase
       .from('buttons')
       .delete()
       .eq('id', id);
+
     if (error) {
       alert('Error deleting button: ' + error.message);
       return false;
@@ -511,195 +518,85 @@
     return true;
   }
 
-  // --- Drag & Drop handlers for rearranging ---
-  let draggedEl = null;
-  function dragStart(e) {
-    draggedEl = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-    draggedEl.classList.add('dragging');
-  }
-  function dragOver(e) {
-    e.preventDefault();
-    const target = e.target;
-    if (target && target !== draggedEl && target.tagName === 'A') {
-      const container = target.parentNode;
-      const draggedIndex = Array.from(container.children).indexOf(draggedEl);
-      const targetIndex = Array.from(container.children).indexOf(target);
-      if (draggedIndex < targetIndex) {
-        container.insertBefore(draggedEl, target.nextSibling);
-      } else {
-        container.insertBefore(draggedEl, target);
-      }
-    }
-  }
-  function dragEnd(e) {
-    draggedEl.classList.remove('dragging');
-    draggedEl = null;
-    // Update buttons array order to match UI
-    const newOrder = [];
-    buttonGroup.querySelectorAll('a').forEach(a => {
-      const id = a.dataset.id === 'null' ? null : Number(a.dataset.id);
-      const btn = buttons.find(b => b.id === id && b.text === a.textContent) || buttons.find(b => b.text === a.textContent);
-      if (btn) newOrder.push(btn);
-    });
-    buttons = newOrder;
-  }
+  // --- Enable drag and drop rearranging ---
   function enableDragAndDrop() {
     const links = buttonGroup.querySelectorAll('a');
     links.forEach(link => {
-      if (link.dataset.id === 'null') return; // skip default buttons (no id)
-      link.setAttribute('draggable', 'true');
+      link.draggable = true;
       link.addEventListener('dragstart', dragStart);
       link.addEventListener('dragover', dragOver);
+      link.addEventListener('drop', drop);
       link.addEventListener('dragend', dragEnd);
     });
   }
+  // --- Disable drag and drop ---
   function disableDragAndDrop() {
     const links = buttonGroup.querySelectorAll('a');
     links.forEach(link => {
-      link.removeAttribute('draggable');
+      link.draggable = false;
       link.removeEventListener('dragstart', dragStart);
       link.removeEventListener('dragover', dragOver);
+      link.removeEventListener('drop', drop);
       link.removeEventListener('dragend', dragEnd);
     });
   }
 
-  // --- Admin Login ---
-  loginForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const username = loginForm.username.value.trim();
-    const password = loginForm.password.value;
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      loginForm.style.display = 'none';
-      adminPanel.style.display = 'block';
-      alert('Logged in as Admin!');
-    } else {
-      alert('Invalid username or password');
-    }
-  });
+  let dragSrcEl = null;
 
-  // --- Add Button Handler ---
-  document.getElementById('addBtn').addEventListener('click', async e => {
-    e.preventDefault();
-    const text = newBtnText.value.trim();
-    const url = newBtnUrl.value.trim();
-    const isEmbed = isEmbedCheckbox.checked;
-    if (!text || !url) {
-      alert('Please enter both button text and URL.');
-      return;
-    }
-    const success = await addButton(text, url, isEmbed);
-    if (success) {
-      newBtnText.value = '';
-      newBtnUrl.value = '';
-      isEmbedCheckbox.checked = false;
-    }
-  });
-
-  // --- Rearrange Buttons ---
-  rearrangeBtn.addEventListener('click', () => {
-    rearranging = !rearranging;
-    if (rearranging) {
-      rearrangeBtn.textContent = 'Save Order';
-      alert('Drag the buttons to rearrange their order, then click "Save Order" to save.');
-      enableDragAndDrop();
-    } else {
-      rearrangeBtn.textContent = 'Enable Rearrange';
-      disableDragAndDrop();
-      saveButtonsOrder();
-    }
-  });
-
-  // --- Logout ---
-  logoutBtn.addEventListener('click', () => {
-    adminPanel.style.display = 'none';
-    loginForm.style.display = 'block';
-  });
-
-  // --- Edit/Delete mode toggle ---
-  editDeleteBtn.addEventListener('click', () => {
-    editDeleteMode = !editDeleteMode;
-    if (editDeleteMode) {
-      editDeleteBtn.textContent = 'Exit Edit/Delete Mode';
-      alert('Click any button to Edit or Delete it.');
-      enableEditDelete();
-    } else {
-      editDeleteBtn.textContent = 'Edit/Delete';
-      disableEditDelete();
-      editDeletePanel.classList.remove('active');
-      editingButtonId = null;
-    }
-  });
-
-  function enableEditDelete() {
-    buttonGroup.querySelectorAll('a').forEach(a => {
-      if (a.dataset.id !== 'null') {
-        a.classList.add('admin-editable');
-        a.addEventListener('click', onButtonEditClick);
-      }
-    });
+  function dragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.outerHTML);
+    this.classList.add('dragging');
   }
-  function disableEditDelete() {
-    buttonGroup.querySelectorAll('a').forEach(a => {
-      a.classList.remove('admin-editable');
-      a.removeEventListener('click', onButtonEditClick);
-    });
+  function dragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+  }
+  function drop(e) {
+    e.preventDefault();
+    if (dragSrcEl !== this) {
+      // Swap buttons in DOM
+      const srcId = dragSrcEl.dataset.id;
+      const targetId = this.dataset.id;
+
+      const srcIndex = buttons.findIndex(b => b.id == srcId);
+      const targetIndex = buttons.findIndex(b => b.id == targetId);
+
+      // Swap positions in buttons array
+      [buttons[srcIndex], buttons[targetIndex]] = [buttons[targetIndex], buttons[srcIndex]];
+
+      renderButtons();
+    }
+    return false;
+  }
+  function dragEnd(e) {
+    this.classList.remove('dragging');
   }
 
-  function onButtonEditClick(e) {
-    e.preventDefault();
-    if (!editDeleteMode) return;
-    const id = Number(e.currentTarget.dataset.id);
-    const btn = buttons.find(b => b.id === id);
-    if (!btn) {
-      alert('Button not found.');
-      return;
-    }
-    editingButtonId = id;
+  // --- Show edit/delete panel and populate with button data ---
+  function openEditDeletePanel(buttonId) {
+    editingButtonId = buttonId;
+    const btn = buttons.find(b => b.id === buttonId);
+    if (!btn) return;
+
     editBtnText.value = btn.text;
     editBtnUrl.value = btn.url;
     editIsEmbedCheckbox.checked = btn.isEmbed;
+    infoMessage.textContent = 'Edit or delete the selected button.';
     editDeletePanel.classList.add('active');
   }
 
-  // --- Confirm Edit ---
-  confirmEditBtn.addEventListener('click', async () => {
-    if (editingButtonId === null) return;
-    const newText = editBtnText.value.trim();
-    const newUrl = editBtnUrl.value.trim();
-    const newIsEmbed = editIsEmbedCheckbox.checked;
-    if (!newText || !newUrl) {
-      alert('Please fill out both fields.');
-      return;
-    }
-    const success = await updateButton(editingButtonId, newText, newUrl, newIsEmbed);
-    if (success) {
-      alert('Button updated!');
-      editDeletePanel.classList.remove('active');
-      editingButtonId = null;
-    }
-  });
-
-  // --- Delete Button ---
-  deleteBtn.addEventListener('click', async () => {
-    if (editingButtonId === null) return;
-    if (!confirm('Are you sure you want to delete this button?')) return;
-    const success = await deleteButton(editingButtonId);
-    if (success) {
-      alert('Button deleted!');
-      editDeletePanel.classList.remove('active');
-      editingButtonId = null;
-    }
-  });
-
-  // --- Close Edit Panel ---
-  closeEditPanel.addEventListener('click', () => {
-    editDeletePanel.classList.remove('active');
+  // --- Close edit/delete panel ---
+  function closeEditDeletePanel() {
     editingButtonId = null;
-  });
+    editDeletePanel.classList.remove('active');
+    infoMessage.textContent = 'Please click on the button you want to Edit or Delete.';
+  }
 
-  // --- Toggle settings menu ---
+  // --- Event listeners ---
+
   gearBtn.addEventListener('click', () => {
     if (settingsMenu.classList.contains('active')) {
       settingsMenu.classList.remove('active');
@@ -708,8 +605,123 @@
     }
   });
 
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      loginForm.style.display = 'none';
+      adminPanel.style.display = 'block';
+      alert('Admin mode enabled.');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    loginForm.style.display = 'block';
+    adminPanel.style.display = 'none';
+  });
+
+  addBtn.addEventListener('click', e => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
+
+    if (!text || !url) {
+      alert('Please enter both button text and URL.');
+      return;
+    }
+    addButton(text, url, isEmbed);
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+  });
+
+  rearrangeBtn.addEventListener('click', () => {
+    rearranging = !rearranging;
+    if (rearranging) {
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      editDeleteMode = false;
+      editDeletePanel.classList.remove('active');
+    } else {
+      rearrangeBtn.textContent = 'Enable Rearrange';
+    }
+    renderButtons();
+  });
+
+  editDeleteBtn.addEventListener('click', () => {
+    editDeleteMode = !editDeleteMode;
+    if (editDeleteMode) {
+      editDeleteBtn.textContent = 'Disable Edit/Delete';
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      editDeletePanel.classList.remove('active');
+      alert('Click any button to Edit or Delete.');
+    } else {
+      editDeleteBtn.textContent = 'Edit/Delete';
+      closeEditDeletePanel();
+    }
+    renderButtons();
+  });
+
+  buttonGroup.addEventListener('click', e => {
+    if (!editDeleteMode) return;
+    if (e.target.tagName === 'A') {
+      e.preventDefault();
+      const id = e.target.dataset.id;
+      if (id) openEditDeletePanel(Number(id));
+    }
+  });
+
+  confirmEditBtn.addEventListener('click', async () => {
+    if (!editingButtonId) return;
+    const newText = editBtnText.value.trim();
+    const newUrl = editBtnUrl.value.trim();
+    const newIsEmbed = editIsEmbedCheckbox.checked;
+
+    if (!newText || !newUrl) {
+      alert('Please enter both button text and URL.');
+      return;
+    }
+    const success = await updateButton(editingButtonId, newText, newUrl, newIsEmbed);
+    if (success) {
+      alert('Button updated.');
+      closeEditDeletePanel();
+    }
+  });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!editingButtonId) return;
+    if (confirm('Are you sure you want to delete this button?')) {
+      const success = await deleteButton(editingButtonId);
+      if (success) {
+        alert('Button deleted.');
+        closeEditDeletePanel();
+      }
+    }
+  });
+
+  closeEditPanel.addEventListener('click', () => {
+    closeEditDeletePanel();
+  });
+
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.open('https://plsdonate.me/ryfo_17', '_blank');
+  });
+
+  // Save order after dragging ends
+  buttonGroup.addEventListener('dragend', () => {
+    if (rearranging) {
+      saveButtonsOrder();
+    }
+  });
+
   // --- Initial load ---
   loadButtons();
 </script>
+
 </body>
 </html>
