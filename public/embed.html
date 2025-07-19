@@ -3,82 +3,197 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Embed Viewer - Ryan's Builds</title>
+  <title>Ryan's Builds</title>
   <style>
     body {
       margin: 0;
-      padding: 40px 20px;
+      padding: 0;
       font-family: sans-serif;
       background-color: #111;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       min-height: 100vh;
       text-align: center;
+      position: relative;
     }
 
-    iframe {
-      max-width: 90vw;
-      width: 900px;
-      height: 506px; /* 16:9 ratio */
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
     }
 
-    a.back-link {
-      margin-top: 30px;
-      color: #28a745;
+    p {
+      max-width: 600px;
+      margin: 20px;
+      font-size: 1.2rem;
+      line-height: 1.5;
+    }
+
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+
+    .button-group a, .button-group .embed {
       text-decoration: none;
-      font-weight: bold;
-      font-size: 1.1rem;
-      border: 2px solid #28a745;
+      color: white;
+      background-color: #444;
       padding: 10px 20px;
       border-radius: 8px;
-      transition: background-color 0.3s, color 0.3s;
+      font-size: 1rem;
+      transition: background 0.3s;
+      user-select: none;
+      cursor: grab;
     }
 
-    a.back-link:hover {
+    .button-group a:hover {
+      background-color: #666;
+    }
+
+    .button-group a.donate {
       background-color: #28a745;
-      color: #111;
+      font-weight: bold;
+    }
+    .button-group a.donate:hover {
+      background-color: #218838;
+    }
+
+    .gear-container {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      cursor: pointer;
+      color: white;
+      font-size: 28px;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    .settings-menu {
+      display: none;
+      position: fixed;
+      top: 55px;
+      right: 15px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 15px;
+      width: 260px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+      color: white;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .settings-menu.active {
+      display: block;
+    }
+
+    .settings-menu button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #444;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .settings-menu button:hover {
+      background: #666;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-form label {
+      margin: 8px 0 4px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .login-form input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .login-form button {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .login-form button:hover {
+      background: #218838;
+    }
+
+    #adminPanel .admin-banner {
+      background: #0f0;
+      color: #000;
+      font-weight: bold;
+      padding: 8px;
+      text-align: center;
+      border-radius: 5px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
+  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
-  <div id="embedContainer">Loading...</div>
-  <a href="index.html" class="back-link">← Back to Home</a>
+  <div class="settings-menu" id="settingsMenu">
+    <form id="loginForm" class="login-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required />
+      <button type="submit">Log In</button>
+    </form>
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    <div id="adminPanel" style="display:none;">
+      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+      <label for="newBtnText">Button Text</label>
+      <input type="text" id="newBtnText" placeholder="Button Label">
+      <label for="newBtnUrl">Button URL or Embed HTML</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or <iframe...>">
+      <label for="newEmbedId">Embed ID (e.g. castle1)</label>
+      <input type="text" id="newEmbedId" placeholder="Required if embed">
+      <label><input type="checkbox" id="isEmbedCheckbox"> This is an embed code</label>
+      <button id="addBtn">Add Button</button>
+      <button id="rearrangeBtn">Enable Rearrange</button>
+      <button onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
 
-    const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  <h1>Ryan's Builds</h1>
+  <p>
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
+  </p>
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
+  <div class="button-group" id="buttonGroup"></div>
 
-    if (!id) {
-      document.getElementById('embedContainer').innerText = 'Error: No embed ID provided.';
-    } else {
-      const { data, error } = await supabase
-        .from('buttons')
-        .select('embed_code')
-        .eq('url', id)
-        .eq('is_embed', true)
-        .single();
-
-      const container = document.getElementById('embedContainer');
-
-      if (error || !data) {
-        container.innerText = 'Embed not found.';
-      } else {
-        container.innerHTML = data.embed_code;
-      }
-    }
-  </script>
+<script src="/script.js"></script>
 </body>
 </html>
