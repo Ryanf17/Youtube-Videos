@@ -1,62 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ryan's Build Video</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Embed</title>
   <style>
     body {
-      margin: 0;
-      padding: 20px;
-      font-family: sans-serif;
       background-color: #111;
       color: white;
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
       min-height: 100vh;
-      text-align: center;
     }
-
     h1 {
-      font-size: 2.5rem;
       margin-bottom: 10px;
     }
-
-    p.description {
-      font-size: 1.2rem;
+    p {
       max-width: 700px;
-      margin-bottom: 30px;
-      line-height: 1.6;
-      color: #ccc;
+      text-align: center;
+      margin-bottom: 20px;
     }
-
     iframe {
       width: 100%;
-      max-width: 960px;
-      height: 540px;
+      max-width: 900px;
+      height: 506px;
       border: none;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
-  <h1 id="videoTitle">Ryan's Build</h1>
-  <p class="description">
-    Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.
-  </p>
+  <h1 id="videoTitle">Loading...</h1>
+  <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
   <iframe id="videoEmbed" allowfullscreen></iframe>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const videoUrl = urlParams.get('video');
-    const title = urlParams.get('title') || "Ryan's Build";
+    const title = decodeURIComponent(urlParams.get("title") || "Ryan's Builds");
+    let rawUrl = decodeURIComponent(urlParams.get("video") || '');
+    let embedUrl = rawUrl;
 
-    document.getElementById('videoTitle').textContent = decodeURIComponent(title);
-    document.getElementById('videoEmbed').src = videoUrl 
-      ? decodeURIComponent(videoUrl) 
-      : 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // fallback
+    if (rawUrl.includes('youtube.com/watch?v=')) {
+      const videoId = rawUrl.split('v=')[1].split('&')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (rawUrl.includes('youtu.be/')) {
+      const videoId = rawUrl.split('youtu.be/')[1];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    document.getElementById('videoTitle').textContent = title;
+    document.getElementById('videoEmbed').src = embedUrl;
   </script>
 </body>
 </html>
