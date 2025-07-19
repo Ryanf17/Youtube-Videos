@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    /* Your CSS exactly as before */
     body {
       margin: 0;
       padding: 0;
@@ -194,13 +197,11 @@
 
   <div class="button-group" id="buttonGroup"></div>
 
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-  // Supabase client setup
-  const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-  const supabase = createClient(supabaseUrl, supabaseKey);
+<script>
+  // Setup Supabase client
+  const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const gearBtn = document.getElementById('gearBtn');
   const settingsMenu = document.getElementById('settingsMenu');
@@ -214,79 +215,58 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-  // Your admin credentials here (keep for now)
+  // Your admin credentials here (will replace with supabase later)
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  // Load buttons from Supabase
-  async function loadButtons() {
-    let { data, error } = await supabase
-      .from('buttons')
-      .select('*')
-      .order('position', { ascending: true });
-
-    if (error) {
-      console.error('Error loading buttons:', error);
-      return [];
-    }
-
-    // If no buttons found, return default set
-    if (!data || data.length === 0) {
-      return getDefaultButtons();
-    }
-
-    return data;
-  }
-
-  // Insert new button to Supabase
-  async function addButton(button) {
-    const { data, error } = await supabase
-      .from('buttons')
-      .insert([button]);
-
-    if (error) {
-      alert('Error adding button: ' + error.message);
-      console.error(error);
-      return false;
-    }
-    return true;
-  }
-
-  // Update buttons order (position field)
-  async function updateButtonsOrder(buttons) {
-    // We'll update each button position in a loop (can optimize with RPC or batch but keep simple)
-    for (let i = 0; i < buttons.length; i++) {
-      const btn = buttons[i];
-      const { error } = await supabase
-        .from('buttons')
-        .update({ position: i })
-        .eq('id', btn.id);
-      if (error) {
-        console.error('Error updating position for button id ' + btn.id, error);
-      }
-    }
-  }
-
-  // Default buttons if DB empty
+  // Default buttons always present if missing in DB
   function getDefaultButtons() {
     return [
-      { text: 'Home', url: 'index.html', donate: false, isEmbed: false, position: 0 },
-      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false, position: 1 },
-      { text: 'Button 2', url: '#', donate: false, isEmbed: false, position: 2 },
-      { text: 'Button 3', url: '#', donate: false, isEmbed: false, position: 3 },
-      { text: 'Button 4', url: '#', donate: false, isEmbed: false, position: 4 },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false, position: 5 }
+      { text: 'Home', url: 'index.html', donate: false, is_embed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, is_embed: false },
+      { text: 'Button 2', url: '#', donate: false, is_embed: false },
+      { text: 'Button 3', url: '#', donate: false, is_embed: false },
+      { text: 'Button 4', url: '#', donate: false, is_embed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, is_embed: false }
     ];
+  }
+
+  // Load buttons from Supabase and merge defaults
+  async function loadButtons() {
+    try {
+      const { data, error } = await supabase
+        .from('buttons')
+        .select('*')
+        .order('position', { ascending: true });
+      if (error) {
+        console.error('Supabase load error:', error);
+        return getDefaultButtons();
+      }
+      if (!data || data.length === 0) {
+        return getDefaultButtons();
+      }
+
+      const defaults = getDefaultButtons();
+
+      // Remove defaults already in DB (match text or url)
+      const filteredDefaults = defaults.filter(def => 
+        !data.some(dbBtn => dbBtn.text === def.text || dbBtn.url === def.url)
+      );
+
+      return [...data, ...filteredDefaults];
+    } catch (e) {
+      console.error('Error loading buttons:', e);
+      return getDefaultButtons();
+    }
   }
 
   // Render buttons on homepage
   async function renderButtons() {
     buttonGroup.innerHTML = '';
     const buttons = await loadButtons();
-
     buttons.forEach(b => {
       const a = document.createElement('a');
-      if (b.isEmbed) {
+      if (b.is_embed || b.isEmbed) {
         a.href = 'embed.html?video=' + encodeURIComponent(b.url);
       } else {
         a.href = b.url;
@@ -324,26 +304,35 @@
     draggedEl.classList.remove('dragging');
     draggedEl = null;
 
-    // Build updated buttons array
+    // Save new order to Supabase
     const buttons = [];
     document.querySelectorAll('#buttonGroup a').forEach((a, index) => {
       buttons.push({
-        id: a.dataset.id ? Number(a.dataset.id) : null,
         text: a.textContent,
         url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
         donate: a.classList.contains('donate'),
-        isEmbed: a.href.includes('embed.html?video='),
-        position: index
+        is_embed: a.href.includes('embed.html?video='),
+        position: index + 1
       });
     });
 
-    // Update positions in DB only for buttons with valid id
-    await updateButtonsOrder(buttons.filter(b => b.id !== null));
+    try {
+      // Clear existing buttons and reinsert in new order
+      await supabase.from('buttons').delete().neq('id', 0); // deletes all (you can adjust based on your setup)
 
-    alert('Buttons rearranged and saved!');
+      // Insert buttons with new order
+      await supabase.from('buttons').insert(buttons);
+
+      alert('Buttons rearranged and saved!');
+    } catch (err) {
+      alert('Error saving order: ' + err.message);
+      console.error(err);
+    }
+
     rearranging = false;
     rearrangeBtn.textContent = 'Enable Rearrange';
     disableDragAndDrop();
+    await renderButtons();
   }
 
   function enableDragAndDrop() {
@@ -365,7 +354,7 @@
   }
 
   // Toggle rearranging on button click
-  rearrangeBtn.addEventListener('click', () => {
+  rearrangeBtn.addEventListener('click', async () => {
     if (!rearranging) {
       rearranging = true;
       rearrangeBtn.textContent = 'Disable Rearrange';
@@ -375,6 +364,7 @@
       rearranging = false;
       rearrangeBtn.textContent = 'Enable Rearrange';
       disableDragAndDrop();
+      await renderButtons();
     }
   });
 
@@ -388,25 +378,22 @@
     if (!text) return alert('Please enter button text.');
     if (!url) return alert('Please enter button URL or embed URL.');
 
-    // Get current buttons to know the max position
-    let currentButtons = await loadButtons();
-    const maxPos = currentButtons.length > 0 ? Math.max(...currentButtons.map(b => b.position ?? 0)) : -1;
+    try {
+      // Insert new button into Supabase
+      const { data, error } = await supabase
+        .from('buttons')
+        .insert([{ text, url, is_embed: isEmbed, donate: false, position: null }]);
 
-    const newButton = {
-      text,
-      url,
-      donate: false,
-      isEmbed,
-      position: maxPos + 1
-    };
+      if (error) throw error;
 
-    const success = await addButton(newButton);
-    if (success) {
-      await renderButtons();
+      alert('Button added!');
       newBtnText.value = '';
       newBtnUrl.value = '';
       isEmbedCheckbox.checked = false;
-      alert('Button added!');
+
+      await renderButtons();
+    } catch (err) {
+      alert('Error adding button: ' + err.message);
     }
   });
 
@@ -420,7 +407,7 @@
 
   // View visitors (placeholder)
   viewVisitorsBtn.addEventListener('click', () => {
-    window.location.href = 'visitors.html'; // Implement this later
+    window.location.href = 'visitors.html'; // Placeholder, implement later
   });
 
   // Gear button toggles settings menu
@@ -444,10 +431,10 @@
     }
   });
 
-  function showAdminPanel() {
+  async function showAdminPanel() {
     loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
-    renderButtons();
+    await renderButtons();
   }
 
   // Close menu if clicked outside
@@ -458,11 +445,13 @@
   });
 
   // On page load
-  if (sessionStorage.getItem('loggedIn') === 'true') {
-    showAdminPanel();
-  } else {
-    renderButtons();
-  }
+  (async () => {
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      await showAdminPanel();
+    } else {
+      await renderButtons();
+    }
+  })();
 </script>
 </body>
 </html>
