@@ -7,7 +7,7 @@
   <style>
     body {
       margin: 0;
-      padding: 0; /* removed top padding for banner */
+      padding: 0;
       font-family: sans-serif;
       background-color: #111;
       color: white;
@@ -50,7 +50,6 @@
       font-size: 1rem;
       transition: background 0.3s;
       user-select: none;
-      cursor: grab; /* for drag & drop */
     }
 
     .button-group a:hover {
@@ -87,7 +86,7 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 260px;
+      width: 240px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
@@ -158,18 +157,6 @@
       color: #bbb;
       font-style: italic;
     }
-
-    /* Admin Mode Banner inside admin panel */
-    #adminBanner {
-      background-color: #28a745;
-      color: #111;
-      font-weight: 700;
-      padding: 8px 12px;
-      border-radius: 5px;
-      margin-bottom: 12px;
-      text-align: center;
-      font-size: 1rem;
-    }
   </style>
 </head>
 <body>
@@ -188,10 +175,9 @@
 
     <!-- Admin Panel (shown if logged in) -->
     <div id="adminPanel" style="display:none;">
-      <div id="adminBanner">Admin Mode Active</div>
-      <button id="addBtn">Add Button</button>
-      <button id="rearrangeBtn">Rearrange Buttons</button>
-      <button id="viewVisitorsBtn">View Visitors</button>
+      <button onclick="alert('Add Button feature coming soon!')">Add Button</button>
+      <button onclick="alert('Rearrange Buttons feature coming soon!')">Rearrange Buttons</button>
+      <button onclick="alert('Visitor tracking feature coming soon!')">View Visitors</button>
       <button onclick="logout()">Logout</button>
       <div class="visitor-count" id="visitorCount">Visitors: 0</div>
     </div>
@@ -203,7 +189,12 @@
   </p>
 
   <div class="button-group" id="buttonGroup">
-    <!-- Buttons will be rendered here -->
+    <a href="index.html">Home</a>
+    <a href="tour.html">CPS Build Tour</a>
+    <a href="#">Button 2</a>
+    <a href="#">Button 3</a>
+    <a href="#">Button 4</a>
+    <a href="https://plsdonate.me/ryfo_17" class="donate" target="_blank" rel="noopener noreferrer">Donate</a>
   </div>
 
 <script>
@@ -212,110 +203,19 @@
   const loginForm = document.getElementById('loginForm');
   const adminPanel = document.getElementById('adminPanel');
   const visitorCountEl = document.getElementById('visitorCount');
-  const buttonGroup = document.getElementById('buttonGroup');
 
   // Your credentials here:
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  // Load buttons from localStorage or default
-  function loadButtons() {
-    const stored = localStorage.getItem('ryansBuildsButtons');
-    if (stored) return JSON.parse(stored);
-    return [
-      { text: 'Home', url: 'index.html' },
-      { text: 'CPS Build Tour', url: 'tour.html' },
-      { text: 'Button 2', url: '#' },
-      { text: 'Button 3', url: '#' },
-      { text: 'Button 4', url: '#' },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
-    ];
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
   }
 
-  function saveButtons(buttons) {
-    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
-  }
-
-  function renderButtons() {
-    buttonGroup.innerHTML = '';
-    const buttons = loadButtons();
-    buttons.forEach(b => {
-      const a = document.createElement('a');
-      a.href = b.url;
-      a.textContent = b.text;
-      a.target = '_blank';
-      if (b.donate) a.classList.add('donate');
-      buttonGroup.appendChild(a);
-    });
-  }
-
-  // Drag & drop for rearranging buttons
-  let draggedEl = null;
-
-  function dragStart(e) {
-    draggedEl = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-    draggedEl.classList.add('dragging');
-  }
-
-  function dragOver(e) {
-    e.preventDefault();
-    const target = e.target;
-    if (target && target !== draggedEl && target.tagName === 'A') {
-      const container = target.parentNode;
-      const rect = target.getBoundingClientRect();
-      const next = (e.clientX - rect.left) / rect.width > 0.5;
-      container.insertBefore(draggedEl, next ? target.nextSibling : target);
-    }
-  }
-
-  function dragEnd(e) {
-    draggedEl.classList.remove('dragging');
-    draggedEl = null;
-    // Save new order
-    const buttons = [];
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      buttons.push({
-        text: a.textContent,
-        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
-        donate: a.classList.contains('donate')
-      });
-    });
-    saveButtons(buttons);
-    alert('Buttons rearranged and saved!');
-  }
-
-  function enableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      a.setAttribute('draggable', true);
-      a.addEventListener('dragstart', dragStart);
-      a.addEventListener('dragover', dragOver);
-      a.addEventListener('dragend', dragEnd);
-    });
-  }
-
-  // Show admin panel
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
-    renderButtons();
-  }
-
-  function logout() {
-    sessionStorage.removeItem('loggedIn');
-    adminPanel.style.display = 'none';
-    loginForm.style.display = 'flex';
-    alert('Logged out.');
-  }
-
-  // Gear button toggles settings menu
   gearBtn.addEventListener('click', () => {
     settingsMenu.classList.toggle('active');
   });
 
-  // Login form submit handler
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = loginForm.username.value.trim();
@@ -325,33 +225,24 @@
       sessionStorage.setItem('loggedIn', 'true');
       showAdminPanel();
       alert('Logged in successfully!');
-      settingsMenu.classList.remove('active');
+      settingsMenu.classList.remove('active'); // close menu on login
     } else {
       alert('Incorrect username or password.');
     }
   });
 
-  // Admin buttons
-  document.getElementById('addBtn').onclick = function() {
-    const text = prompt('Enter button text:');
-    if (!text) return alert('Cancelled');
-    const url = prompt('Enter button URL (e.g. index.html):');
-    if (!url) return alert('Cancelled');
-    const buttons = loadButtons();
-    buttons.push({ text, url });
-    saveButtons(buttons);
-    renderButtons();
-    alert('Button added!');
-  };
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
+  }
 
-  document.getElementById('rearrangeBtn').onclick = function() {
-    alert('Drag buttons to rearrange them. Drag cursor enabled.');
-    enableDragAndDrop();
-  };
-
-  document.getElementById('viewVisitorsBtn').onclick = function() {
-    alert(visitorCountEl.textContent);
-  };
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  }
 
   // Close menu if clicked outside
   document.addEventListener('click', (e) => {
@@ -359,13 +250,6 @@
       settingsMenu.classList.remove('active');
     }
   });
-
-  // On load, if logged in, show admin panel, else just render buttons
-  if (sessionStorage.getItem('loggedIn') === 'true') {
-    showAdminPanel();
-  } else {
-    renderButtons();
-  }
 </script>
 
 </body>
