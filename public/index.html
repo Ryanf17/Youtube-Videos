@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
+    /* Your existing styles */
     body {
       margin: 0;
       padding: 0;
@@ -159,8 +160,7 @@
       font-size: 1rem;
     }
   </style>
-
-  <!-- Load Supabase JS BEFORE your own script -->
+  <!-- 1. Load Supabase script FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
@@ -197,12 +197,16 @@
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  // 1. Initialize Supabase at the top
-  const supabaseUrl = 'https://dhtvzodmctwrdeiliyld.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-  const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+  // 2. Supabase config and init
+  const SUPABASE_URL = 'https://dhtvzodmctwrdeiliyld.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // 2. DOM references
+  // 3. Admin credentials
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+  // 4. Elements
   const gearBtn = document.getElementById('gearBtn');
   const settingsMenu = document.getElementById('settingsMenu');
   const loginForm = document.getElementById('loginForm');
@@ -215,11 +219,7 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-  // 3. Admin credentials
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
-
-  // 4. Default buttons fallback
+  // 5. Default buttons fallback
   function getDefaultButtons() {
     return [
       { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
@@ -231,38 +231,8 @@
     ];
   }
 
-  // 5. Load buttons from Supabase (async)
-  async function loadButtonsFromSupabase() {
-    try {
-      let { data, error } = await supabase
-        .from('buttons')
-        .select('*')
-        .order('id', { ascending: true });
-
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        return getDefaultButtons();
-      }
-
-      if (!data || data.length === 0) {
-        return getDefaultButtons();
-      }
-
-      return data.map(row => ({
-        text: row.text,
-        url: row.url,
-        donate: row.donate,
-        isEmbed: row.is_embed
-      }));
-
-    } catch (err) {
-      console.error('Error loading buttons:', err);
-      return getDefaultButtons();
-    }
-  }
-
-  // 6. Load buttons from localStorage fallback
-  function loadButtonsLocal() {
+  // 6. Load buttons from localStorage or Supabase or defaults
+  function loadButtonsFromLocalStorage() {
     const stored = localStorage.getItem('ryansBuildsButtons');
     if (stored) {
       try {
@@ -274,21 +244,12 @@
     return null;
   }
 
-  // 7. Save buttons locally only
-  function saveButtonsLocal(buttons) {
+  function saveButtonsToLocalStorage(buttons) {
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
-  // 8. Render buttons, try localStorage first, else supabase fallback
-  async function renderButtons() {
-    // Try localStorage first
-    let buttons = loadButtonsLocal();
-    if (!buttons || buttons.length === 0) {
-      // fallback to supabase
-      buttons = await loadButtonsFromSupabase();
-      // Save supabase buttons locally so admin UI can edit them
-      saveButtonsLocal(buttons);
-    }
+  // 7. Render buttons helper
+  function renderButtons(buttons) {
     buttonGroup.innerHTML = '';
     buttons.forEach(b => {
       const a = document.createElement('a');
@@ -304,7 +265,44 @@
     });
   }
 
-  // 9. Drag & drop rearranging handlers
+  // 8. Load buttons from Supabase, or fallback to defaults
+  async function loadButtons() {
+    // Try localStorage first
+    let buttons = loadButtonsFromLocalStorage();
+    if (buttons && buttons.length) {
+      renderButtons(buttons);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('buttons')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        buttons = getDefaultButtons();
+      } else if (!data || data.length === 0) {
+        buttons = getDefaultButtons();
+      } else {
+        buttons = data.map(row => ({
+          text: row.text,
+          url: row.url,
+          donate: row.donate,
+          isEmbed: row.is_embed
+        }));
+      }
+    } catch (e) {
+      console.error('Unexpected error:', e);
+      buttons = getDefaultButtons();
+    }
+
+    saveButtonsToLocalStorage(buttons);
+    renderButtons(buttons);
+  }
+
+  // 9. Drag and drop for rearranging buttons
   let draggedEl = null;
   let rearranging = false;
 
@@ -338,8 +336,8 @@
         isEmbed: a.href.includes('embed.html?video=')
       });
     });
-    saveButtonsLocal(buttons);
-    alert('Buttons rearranged and saved locally!');
+    saveButtonsToLocalStorage(buttons);
+    alert('Buttons rearranged and saved!');
     rearranging = false;
     rearrangeBtn.textContent = 'Enable Rearrange';
     disableDragAndDrop();
@@ -386,15 +384,15 @@
     if (!text) return alert('Please enter button text.');
     if (!url) return alert('Please enter button URL or embed URL.');
 
-    const buttons = loadButtonsLocal() || [];
+    const buttons = loadButtonsFromLocalStorage() || [];
     buttons.push({ text, url, donate: false, isEmbed });
-    saveButtonsLocal(buttons);
-    renderButtons();
+    saveButtonsToLocalStorage(buttons);
+    renderButtons(buttons);
 
     newBtnText.value = '';
     newBtnUrl.value = '';
     isEmbedCheckbox.checked = false;
-    alert('Button added locally!');
+    alert('Button added!');
   });
 
   // 11. Logout
@@ -405,12 +403,12 @@
     alert('Logged out.');
   });
 
-  // 12. View visitors (placeholder)
+  // 12. Visitors button placeholder
   viewVisitorsBtn.addEventListener('click', () => {
-    window.location.href = 'visitors.html'; // Replace with real visitor page if exists
+    window.location.href = 'visitors.html'; // Adjust as needed
   });
 
-  // 13. Gear icon toggle settings menu
+  // 13. Gear button toggle settings menu
   gearBtn.addEventListener('click', () => {
     settingsMenu.classList.toggle('active');
   });
@@ -431,26 +429,27 @@
     }
   });
 
+  // 15. Show admin panel or login form based on session
   function showAdminPanel() {
     loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
-    renderButtons();
+    const buttons = loadButtonsFromLocalStorage() || getDefaultButtons();
+    renderButtons(buttons);
   }
 
-  // 15. Close settings menu if clicked outside
+  // 16. Close settings menu when clicking outside
   document.addEventListener('click', (e) => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
-  // 16. On page load check login and render buttons
+  // 17. On page load
   window.addEventListener('DOMContentLoaded', () => {
     if (sessionStorage.getItem('loggedIn') === 'true') {
       showAdminPanel();
-    } else {
-      renderButtons();
     }
+    loadButtons();
   });
 </script>
 </body>
