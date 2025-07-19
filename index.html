@@ -17,6 +17,7 @@
       justify-content: center;
       min-height: 100vh;
       text-align: center;
+      position: relative;
     }
 
     h1 {
@@ -33,6 +34,11 @@
 
     .button-group {
       margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
     }
 
     .button-group a {
@@ -40,27 +46,208 @@
       color: white;
       background-color: #444;
       padding: 10px 20px;
-      margin: 0 10px;
       border-radius: 8px;
       font-size: 1rem;
       transition: background 0.3s;
+      user-select: none;
     }
 
     .button-group a:hover {
       background-color: #666;
     }
+
+    .button-group a.donate {
+      background-color: #28a745;
+      font-weight: bold;
+    }
+    .button-group a.donate:hover {
+      background-color: #218838;
+    }
+
+    .gear-container {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      cursor: pointer;
+      color: white;
+      font-size: 28px;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    .settings-menu {
+      display: none;
+      position: fixed;
+      top: 55px;
+      right: 15px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 15px;
+      width: 240px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+      color: white;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .settings-menu.active {
+      display: block;
+    }
+
+    .settings-menu button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #444;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .settings-menu button:hover {
+      background: #666;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-form label {
+      margin: 8px 0 4px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .login-form input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .login-form button {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .login-form button:hover {
+      background: #218838;
+    }
+
+    .visitor-count {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #bbb;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
+
+  <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+
+  <div class="settings-menu" id="settingsMenu">
+    <form id="loginForm" class="login-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" required />
+      <button type="submit">Log In</button>
+    </form>
+
+    <div id="adminPanel" style="display:none;">
+      <button onclick="alert('Add Button feature coming soon!')">Add Button</button>
+      <button onclick="alert('Rearrange Buttons feature coming soon!')">Rearrange Buttons</button>
+      <button onclick="alert('Visitor tracking feature coming soon!')">View Visitors</button>
+      <button onclick="logout()">Logout</button>
+      <div class="visitor-count" id="visitorCount">Visitors: 0</div>
+    </div>
+  </div>
+
   <h1>Ryan's Builds</h1>
   <p>
     Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
   </p>
 
-  <div class="button-group">
+  <div class="button-group" id="buttonGroup">
     <a href="index.html">Home</a>
     <a href="tour.html">CPS Build Tour</a>
     <a href="#">Button 2</a>
+    <a href="#">Button 3</a>
+    <a href="#">Button 4</a>
+    <a href="#" class="donate" target="_blank" rel="noopener noreferrer">Donate</a>
   </div>
+
+<script>
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const visitorCountEl = document.getElementById('visitorCount');
+  const donateBtn = document.querySelector('.donate');
+
+  donateBtn.href = 'https://plsdonate.me/ryfo_17';
+
+  // Your credentials here:
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  }
+
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active'); // close menu on login
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
+  }
+
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  }
+
+  // Close menu if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+</script>
+
 </body>
 </html>
