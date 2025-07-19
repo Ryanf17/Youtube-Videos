@@ -2,97 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Embed Video</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Embed Viewer - Ryan's Builds</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
+      padding: 40px 20px;
+      font-family: sans-serif;
       background-color: #111;
       color: white;
-      font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
       text-align: center;
-      padding: 20px;
     }
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-    }
-    .iframe-container {
-      position: relative;
-      width: 100%;
-      max-width: 900px;
-      padding-bottom: 56.25%; /* 16:9 aspect ratio */
-      height: 0;
-      margin-bottom: 30px;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
-    }
-    .iframe-container iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
+
+    iframe {
+      max-width: 90vw;
+      width: 900px;
+      height: 506px; /* 16:9 ratio */
       border: none;
       border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
-    .back-btn {
+
+    a.back-link {
+      margin-top: 30px;
+      color: #28a745;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: 2px solid #28a745;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    a.back-link:hover {
       background-color: #28a745;
       color: #111;
-      font-weight: bold;
-      padding: 12px 25px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 1.1rem;
-      user-select: none;
-      transition: background-color 0.3s;
-    }
-    .back-btn:hover {
-      background-color: #218838;
     }
   </style>
 </head>
 <body>
-  <h1>Video Embed</h1>
 
-  <div class="iframe-container" id="iframeContainer">
-    <!-- iframe will be injected here -->
-  </div>
+  <div id="embedContainer">Loading...</div>
+  <a href="index.html" class="back-link">← Back to Home</a>
 
-  <a href="index.html" class="back-btn">Back to Home</a>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  <script>
-    function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
-    }
+    const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    function isValidEmbedUrl(url) {
-      // Basic validation: must start with https:// or http:// and contain youtube or vimeo or embed code
-      // You can expand this with regex if needed
-      if (!url) return false;
-      const lowered = url.toLowerCase();
-      return (lowered.startsWith('https://') || lowered.startsWith('http://')) &&
-             (lowered.includes('youtube.com') || lowered.includes('youtu.be') || lowered.includes('vimeo.com') || lowered.includes('embed'));
-    }
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
 
-    const embedUrl = getQueryParam('video');
-
-    if (embedUrl && isValidEmbedUrl(embedUrl)) {
-      const iframeContainer = document.getElementById('iframeContainer');
-      const iframe = document.createElement('iframe');
-      iframe.src = embedUrl;
-      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-      iframe.allowFullscreen = true;
-      iframeContainer.appendChild(iframe);
+    if (!id) {
+      document.getElementById('embedContainer').innerText = 'Error: No embed ID provided.';
     } else {
-      document.getElementById('iframeContainer').innerHTML = '<p style="color:#f55;">Invalid or missing embed URL.</p>';
+      const { data, error } = await supabase
+        .from('buttons')
+        .select('embed_code')
+        .eq('url', id)
+        .eq('is_embed', true)
+        .single();
+
+      const container = document.getElementById('embedContainer');
+
+      if (error || !data) {
+        container.innerText = 'Embed not found.';
+      } else {
+        container.innerHTML = data.embed_code;
+      }
     }
   </script>
 </body>
