@@ -3,89 +3,148 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loading...</title>
+  <title>Embed Video</title>
   <style>
     body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
       margin: 0;
       padding: 20px;
-      font-family: sans-serif;
-      background-color: #111;
-      color: #fff;
       text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
 
     h1 {
       margin-bottom: 10px;
-      font-size: 2rem;
+      font-size: 2.5rem;
+      max-width: 90vw;
+      word-break: break-word;
     }
 
     p {
+      font-size: 1.2rem;
+      max-width: 700px;
       margin-bottom: 20px;
-      font-size: 1.1rem;
-      color: #ccc;
+      line-height: 1.4;
+      color: #ddd;
     }
 
     iframe {
-      width: 100%;
+      width: 90vw;
       max-width: 960px;
       height: 540px;
       border: none;
       border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
     }
 
-    .back-btn {
-      display: inline-block;
+    /* Match your index buttons style */
+    .back-button {
       margin-top: 30px;
       padding: 10px 20px;
-      background-color: #28a745;
-      color: #fff;
-      font-weight: bold;
+      background-color: #444;
+      color: white;
+      font-weight: 600;
+      border-radius: 8px;
       text-decoration: none;
-      border-radius: 5px;
-      transition: background-color 0.3s;
+      cursor: pointer;
+      user-select: none;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+      display: inline-block;
     }
 
-    .back-btn:hover {
-      background-color: #218838;
-    }
-
-    @media (max-width: 768px) {
-      iframe {
-        height: 360px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      iframe {
-        height: 240px;
-      }
+    .back-button:hover {
+      background-color: #666;
     }
   </style>
 </head>
 <body>
-  <h1 id="embedTitle">Loading...</h1>
+  <h1 id="pageTitle">Loading...</h1>
   <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
-  <iframe id="videoFrame" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <br />
-  <a href="index.html" class="back-btn">← Back to Home</a>
 
-  <script>
-    // Read query params
-    const params = new URLSearchParams(window.location.search);
-    const video = params.get('video');
-    const title = params.get('title') || "Ryan's Builds";
+  <div id="videoContainer">
+    <!-- iframe will be inserted here -->
+  </div>
 
-    // Update page title and heading
-    document.title = title;
-    document.getElementById('embedTitle').textContent = title;
+  <a href="index.html" class="back-button">← Back to Home</a>
 
-    // Embed video
-    if (video) {
-      document.getElementById('videoFrame').src = video;
-    } else {
-      document.getElementById('videoFrame').style.display = 'none';
-      document.querySelector('p').textContent = 'Error: No video URL provided.';
+<script>
+  function getQueryParams() {
+    const params = {};
+    window.location.search
+      .substring(1)
+      .split('&')
+      .forEach(pair => {
+        const [key, value] = pair.split('=');
+        if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+      });
+    return params;
+  }
+
+  const params = getQueryParams();
+  const videoUrl = params.video || '';
+  const title = params.title || 'Video Embed';
+
+  document.title = title;
+  document.getElementById('pageTitle').textContent = title;
+
+  function getEmbedSrc(url) {
+    if (!url) return '';
+    console.log('Original video URL param:', url);
+
+    // If url already looks like an embed url, return as is
+    if (url.includes('youtube.com/embed/')) {
+      console.log('URL is already embed URL');
+      return url;
     }
-  </script>
+
+    // If url is a normal youtube watch URL, extract the v= param
+    const watchMatch = url.match(/[?&]v=([^&]+)/);
+    if (watchMatch) {
+      console.log('Extracted video ID from watch URL:', watchMatch[1]);
+      return 'https://www.youtube.com/embed/' + watchMatch[1];
+    }
+
+    // If url looks like just a video ID (11 chars)
+    if (/^[\w-]{11}$/.test(url)) {
+      console.log('URL looks like a video ID');
+      return 'https://www.youtube.com/embed/' + url;
+    }
+
+    // If url is a youtu.be short link
+    const shortLinkMatch = url.match(/youtu\.be\/([^?&]+)/);
+    if (shortLinkMatch) {
+      console.log('Extracted video ID from youtu.be short link:', shortLinkMatch[1]);
+      return 'https://www.youtube.com/embed/' + shortLinkMatch[1];
+    }
+
+    console.warn('Could not parse video URL for embed:', url);
+    return '';
+  }
+
+  const embedSrc = getEmbedSrc(videoUrl);
+
+  if (embedSrc) {
+    const iframe = document.createElement('iframe');
+    iframe.width = '960';
+    iframe.height = '540';
+    iframe.src = embedSrc;
+    iframe.title = title;
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+
+    document.getElementById('videoContainer').appendChild(iframe);
+  } else {
+    document.getElementById('videoContainer').textContent = 'Invalid or missing video URL.';
+  }
+</script>
 </body>
 </html>
