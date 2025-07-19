@@ -1,1 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ryan's Builds</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; }
+    #buttonGroup a {
+      display: inline-block;
+      margin: 0.3em;
+      padding: 0.5em 1em;
+      text-decoration: none;
+      background: #0070f3;
+      color: white;
+      border-radius: 4px;
+    }
+    #buttonGroup a.donate {
+      background: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ryan's Builds</h1>
+  <p>Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. A fun way to share my builds, tours, and design ideas with the community. Feel free to explore and get inspired!</p>
+  
+  <div id="buttonGroup">Loading buttons...</div>
+
+  <script>
+    async function loadButtons() {
+      try {
+        const res = await fetch('/api/buttons/get');
+        if (!res.ok) throw new Error('Failed to fetch buttons');
+        const buttons = await res.json();
+        const container = document.getElementById('buttonGroup');
+        container.innerHTML = '';
+        buttons.forEach(({ text, url, donate }) => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.textContent = text;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          if (donate) a.classList.add('donate');
+          container.appendChild(a);
+        });
+      } catch (e) {
+        document.getElementById('buttonGroup').textContent = 'Failed to load buttons.';
+        console.error(e);
+      }
+    }
+    loadButtons();
+  </script>
+</body>
+</html>
 
