@@ -1,60 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Embed</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Embed Video</title>
   <style>
     body {
       background-color: #111;
       color: white;
       font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding: 20px;
-      min-height: 100vh;
     }
+
     h1 {
       margin-bottom: 10px;
+      font-size: 2.5rem;
+      max-width: 90vw;
+      word-break: break-word;
     }
+
     p {
+      font-size: 1.2rem;
       max-width: 700px;
-      text-align: center;
       margin-bottom: 20px;
+      line-height: 1.4;
+      color: #ddd;
     }
+
     iframe {
-      width: 100%;
-      max-width: 900px;
-      height: 506px;
+      width: 90vw;
+      max-width: 960px;
+      height: 540px;
       border: none;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
+    }
+
+    .back-button {
+      margin-top: 30px;
+      padding: 10px 25px;
+      background-color: #28a745;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      text-decoration: none;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .back-button:hover {
+      background-color: #218838;
     }
   </style>
 </head>
 <body>
-  <h1 id="videoTitle">Loading...</h1>
+  <h1 id="pageTitle">Loading...</h1>
   <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
-  <iframe id="videoEmbed" allowfullscreen></iframe>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const title = decodeURIComponent(urlParams.get("title") || "Ryan's Builds");
-    let rawUrl = decodeURIComponent(urlParams.get("video") || '');
-    let embedUrl = rawUrl;
+  <div id="videoContainer">
+    <!-- iframe inserted here -->
+  </div>
 
-    if (rawUrl.includes('youtube.com/watch?v=')) {
-      const videoId = rawUrl.split('v=')[1].split('&')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (rawUrl.includes('youtu.be/')) {
-      const videoId = rawUrl.split('youtu.be/')[1];
-      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  <a href="index.html" class="back-button">← Back to Home</a>
+
+<script>
+  // Helper: parse URL query parameters
+  function getQueryParams() {
+    const params = {};
+    window.location.search
+      .substring(1)
+      .split('&')
+      .forEach(pair => {
+        const [key, value] = pair.split('=');
+        if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+      });
+    return params;
+  }
+
+  const params = getQueryParams();
+  const videoUrl = params.video || '';
+  const title = params.title || 'Video Embed';
+
+  // Set page title and heading
+  document.title = title;
+  document.getElementById('pageTitle').textContent = title;
+
+  // Embed YouTube iframe if valid video URL
+  // Accept either full embed URL or just video ID (common cases)
+  function getEmbedSrc(url) {
+    if (!url) return '';
+    // If url already looks like embed url, return it
+    if (url.includes('youtube.com/embed/')) return url;
+    // If url is standard youtube watch URL, convert to embed
+    const watchMatch = url.match(/v=([^&]+)/);
+    if (watchMatch) {
+      return 'https://www.youtube.com/embed/' + watchMatch[1];
     }
+    // If url looks like just a video ID (11 chars typical), embed that
+    if (/^[\w-]{11}$/.test(url)) {
+      return 'https://www.youtube.com/embed/' + url;
+    }
+    // Otherwise return as is (may break if invalid)
+    return url;
+  }
 
-    document.getElementById('videoTitle').textContent = title;
-    document.getElementById('videoEmbed').src = embedUrl;
-  </script>
+  const embedSrc = getEmbedSrc(videoUrl);
+
+  if (embedSrc) {
+    const iframe = document.createElement('iframe');
+    iframe.width = '960';
+    iframe.height = '540';
+    iframe.src = embedSrc;
+    iframe.title = title;
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+
+    document.getElementById('videoContainer').appendChild(iframe);
+  } else {
+    document.getElementById('videoContainer').textContent = 'Invalid or missing video URL.';
+  }
+</script>
 </body>
 </html>
