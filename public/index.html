@@ -195,11 +195,12 @@
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
+  const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+
   async function renderButtons() {
-    const res = await fetch('https://dhvzodmctwrdeiliiyld.supabase.co/rest/v1/buttons?select=*', {
-      headers: {
-        apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E'
-      }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/buttons?select=*`, {
+      headers: { apikey: SUPABASE_KEY }
     });
     const data = await res.json();
     const group = document.getElementById('buttonGroup');
@@ -208,10 +209,8 @@
     group.innerHTML = '';
 
     const hasRegularButtons = data.some(b => !b.is_embed);
-    if (!hasRegularButtons) {
-      title.style.display = 'none';
-      desc.style.display = 'none';
-    }
+    title.style.display = hasRegularButtons ? '' : 'none';
+    desc.style.display = hasRegularButtons ? '' : 'none';
 
     data.sort((a, b) => a.position - b.position).forEach(btn => {
       const a = document.createElement('a');
@@ -222,6 +221,48 @@
       group.appendChild(a);
     });
   }
+
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const text = document.getElementById('newBtnText').value.trim();
+    const url = document.getElementById('newBtnUrl').value.trim();
+    const embed = document.getElementById('isEmbedCheckbox').checked;
+    const embedId = document.getElementById('newEmbedId').value.trim();
+    if (!text || !url) return alert('Text and URL are required.');
+    if (embed && !embedId) return alert('Embed ID is required for embeds.');
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/buttons?select=position`, { headers: { apikey: SUPABASE_KEY } });
+    const existing = await res.json();
+    const position = (Math.max(0, ...existing.map(b => b.position || 0)) + 1);
+
+    const payload = {
+      text,
+      url,
+      is_embed: embed,
+      donate: false,
+      position
+    };
+
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/buttons`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (insertRes.ok) {
+      renderButtons();
+      document.getElementById('newBtnText').value = '';
+      document.getElementById('newBtnUrl').value = '';
+      document.getElementById('newEmbedId').value = '';
+      document.getElementById('isEmbedCheckbox').checked = false;
+    } else {
+      alert('Failed to add button.');
+    }
+  });
+
   renderButtons();
 </script>
 
