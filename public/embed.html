@@ -3,58 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Embed Video</title>
+  <title>Ryan's Build Video</title>
   <style>
     body {
-      background: #111;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
+      margin: 0;
       padding: 20px;
+      font-family: sans-serif;
+      background-color: #111;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
     }
+
     h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
     }
-    p {
-      margin-bottom: 20px;
-      font-size: 1.1rem;
+
+    p.description {
+      font-size: 1.2rem;
+      max-width: 700px;
+      margin-bottom: 30px;
+      line-height: 1.6;
+      color: #ccc;
     }
+
     iframe {
-      width: 80vw;
-      height: 45vw;
-      max-width: 900px;
-      max-height: 506px;
+      width: 100%;
+      max-width: 960px;
+      height: 540px;
       border: none;
       border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
     }
   </style>
 </head>
 <body>
-  <h1 id="title">Loading...</h1>
-  <p>Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.</p>
-  <iframe id="videoPlayer" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+  <h1 id="videoTitle">Ryan's Build</h1>
+  <p class="description">
+    Enjoy this detailed video walkthrough of custom builds in Rocitizens. Explore the creativity and inspiration behind each design.
+  </p>
+  <iframe id="videoEmbed" allowfullscreen></iframe>
 
   <script>
-    // Get query parameters from URL
-    const params = new URLSearchParams(window.location.search);
-    const videoUrl = params.get('video');
-    const title = params.get('title');
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoUrl = urlParams.get('video');
+    const title = urlParams.get('title') || "Ryan's Build";
 
-    // Set title text
-    if (title) {
-      document.getElementById('title').textContent = decodeURIComponent(title);
-    } else {
-      document.getElementById('title').textContent = 'Video';
-    }
-
-    // Set iframe src to embed URL
-    if (videoUrl) {
-      document.getElementById('videoPlayer').src = decodeURIComponent(videoUrl);
-    } else {
-      document.getElementById('videoPlayer').style.display = 'none';
-      document.querySelector('p').textContent = 'No video URL provided.';
-    }
+    document.getElementById('videoTitle').textContent = decodeURIComponent(title);
+    document.getElementById('videoEmbed').src = videoUrl 
+      ? decodeURIComponent(videoUrl) 
+      : 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // fallback
   </script>
 </body>
 </html>
