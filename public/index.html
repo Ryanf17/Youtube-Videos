@@ -19,16 +19,19 @@
       text-align: center;
       position: relative;
     }
+
     h1 {
       font-size: 3rem;
       margin-bottom: 10px;
     }
+
     p {
       max-width: 600px;
       margin: 20px;
       font-size: 1.2rem;
       line-height: 1.5;
     }
+
     .button-group {
       margin-top: 20px;
       display: flex;
@@ -37,6 +40,7 @@
       justify-content: center;
       max-width: 800px;
     }
+
     .button-group a {
       text-decoration: none;
       color: white;
@@ -48,9 +52,11 @@
       user-select: none;
       cursor: grab;
     }
+
     .button-group a:hover {
       background-color: #666;
     }
+
     .button-group a.donate {
       background-color: #28a745;
       font-weight: bold;
@@ -58,6 +64,7 @@
     .button-group a.donate:hover {
       background-color: #218838;
     }
+
     .gear-container {
       position: fixed;
       top: 15px;
@@ -68,6 +75,7 @@
       user-select: none;
       z-index: 1000;
     }
+
     .settings-menu {
       display: none;
       position: fixed;
@@ -83,9 +91,11 @@
       font-size: 14px;
       z-index: 1000;
     }
+
     .settings-menu.active {
       display: block;
     }
+
     .settings-menu button {
       display: block;
       width: 100%;
@@ -102,15 +112,18 @@
     .settings-menu button:hover {
       background: #666;
     }
+
     .login-form {
       display: flex;
       flex-direction: column;
     }
+
     .login-form label {
       margin: 8px 0 4px;
       text-align: left;
       font-size: 14px;
     }
+
     .login-form input {
       padding: 8px;
       border-radius: 5px;
@@ -118,6 +131,7 @@
       font-size: 14px;
       margin-bottom: 12px;
     }
+
     .login-form button {
       background: #28a745;
       color: white;
@@ -129,9 +143,11 @@
       font-size: 14px;
       transition: background 0.3s;
     }
+
     .login-form button:hover {
       background: #218838;
     }
+
     #adminPanel .admin-banner {
       background: #28a745;
       color: #111;
@@ -146,6 +162,7 @@
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+
   <div class="settings-menu" id="settingsMenu">
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
@@ -154,6 +171,7 @@
       <input type="password" id="password" autocomplete="current-password" required />
       <button type="submit">Log In</button>
     </form>
+
     <div id="adminPanel" style="display:none;">
       <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
       <label for="newBtnText">Button Text</label>
@@ -172,133 +190,202 @@
   <p>
     Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
   </p>
+
   <div class="button-group" id="buttonGroup"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const supabaseUrl = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+<script>
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const buttonGroup = document.getElementById('buttonGroup');
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-    const ADMIN_USERNAME = 'Ryanf17';
-    const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-    const buttonGroup = document.getElementById('buttonGroup');
-    const newBtnText = document.getElementById('newBtnText');
-    const newBtnUrl = document.getElementById('newBtnUrl');
-    const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
-    const rearrangeBtn = document.getElementById('rearrangeBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+  function getDefaultButtons() {
+    return [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
+    ];
+  }
 
-    function getDefaultButtons() {
-      return [
-        { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
-        { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
-        { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
-      ];
-    }
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) return JSON.parse(stored);
+    return getDefaultButtons();
+  }
 
-    async function loadButtons() {
-      const { data, error } = await supabase
-        .from('buttons')
-        .select('*')
-        .order('position', { ascending: true });
+  function saveButtons(buttons) {
+    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+  }
 
-      if (error || !data || data.length === 0) {
-        console.warn('Supabase load error or empty, falling back to defaults.', error);
-        return getDefaultButtons();
-      }
-      return data;
-    }
-
-    async function saveButtons(buttons) {
-      await supabase.from('buttons').delete().neq('id', 0);
-      const records = buttons.map((b, i) => ({
-        text: b.text,
-        url: b.url,
-        donate: b.donate,
-        is_embed: b.isEmbed,
-        position: i
-      }));
-      await supabase.from('buttons').insert(records);
-    }
-
-    async function renderButtons() {
-      const buttons = await loadButtons();
-      buttonGroup.innerHTML = '';
-      buttons.forEach(b => {
-        const a = document.createElement('a');
-        a.textContent = b.text;
-        if (b.is_embed) {
-          a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
-        } else {
-          a.href = b.url;
-        }
-        a.target = '_blank';
-        if (b.donate) a.classList.add('donate');
-        buttonGroup.appendChild(a);
-      });
-    }
-
-    document.getElementById('addBtn').addEventListener('click', async e => {
-      e.preventDefault();
-      const text = newBtnText.value.trim();
-      const url = newBtnUrl.value.trim();
-      const isEmbed = isEmbedCheckbox.checked;
-      if (!text || !url) return alert('Enter both label and URL.');
-
-      const currentButtons = await loadButtons();
-      currentButtons.push({ text, url, donate: false, isEmbed });
-      await saveButtons(currentButtons);
-      await renderButtons();
-
-      newBtnText.value = '';
-      newBtnUrl.value = '';
-      isEmbedCheckbox.checked = false;
-      alert('Button added!');
-    });
-
-    rearrangeBtn.addEventListener('click', () => alert('Rearrange functionality coming soon.'));
-    logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('loggedIn');
-      location.reload();
-    });
-    viewVisitorsBtn.addEventListener('click', () => alert('Visitor stats coming soon.'));
-
-    document.getElementById('gearBtn').addEventListener('click', () => {
-      document.getElementById('settingsMenu').classList.toggle('active');
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const u = document.getElementById('username').value.trim();
-      const p = document.getElementById('password').value;
-      if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
-        sessionStorage.setItem('loggedIn', 'true');
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        alert('Logged in!');
+  function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach(b => {
+      const a = document.createElement('a');
+      if (b.isEmbed) {
+        // Pass both video and title for embed page
+        a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
       } else {
-        alert('Wrong credentials.');
+        a.href = b.url;
       }
+      a.textContent = b.text;
+      a.target = '_blank';
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
     });
+  }
 
-    document.addEventListener('click', e => {
-      const settingsMenu = document.getElementById('settingsMenu');
-      const gearBtn = document.getElementById('gearBtn');
-      if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
-        settingsMenu.classList.remove('active');
-      }
-    });
+  let draggedEl = null;
+  let rearranging = false;
 
-    window.addEventListener('DOMContentLoaded', () => {
-      if (sessionStorage.getItem('loggedIn') === 'true') {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-      }
-      renderButtons();
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
+
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
+
+  function dragEnd(e) {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        isEmbed: a.href.includes('embed.html?video=')
+      });
     });
-  </script>
+    saveButtons(buttons);
+    alert('Buttons rearranged and saved!');
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+    disableDragAndDrop();
+  }
+
+  function enableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  function disableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.removeAttribute('draggable');
+      a.removeEventListener('dragstart', dragStart);
+      a.removeEventListener('dragover', dragOver);
+      a.removeEventListener('dragend', dragEnd);
+    });
+  }
+
+  rearrangeBtn.addEventListener('click', () => {
+    if (!rearranging) {
+      rearranging = true;
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      enableDragAndDrop();
+      alert('Drag the buttons to rearrange their order, then release the drag to save.');
+    } else {
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
+    }
+  });
+
+  document.getElementById('addBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
+
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
+
+    const buttons = loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+    saveButtons(buttons);
+    renderButtons();
+
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    alert('Button added!');
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  });
+
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder for visitors
+  });
+
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
+  }
+</script>
 </body>
 </html>
