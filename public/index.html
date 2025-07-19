@@ -1,6 +1,3 @@
-lets use this code i will provide below but with the updated changes and also everything should be done on the panel no pop ups 
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +7,7 @@ lets use this code i will provide below but with the updated changes and also ev
   <style>
     body {
       margin: 0;
-      padding: 0; /* removed top padding for banner */
+      padding: 0;
       font-family: sans-serif;
       background-color: #111;
       color: white;
@@ -44,7 +41,7 @@ lets use this code i will provide below but with the updated changes and also ev
       max-width: 800px;
     }
 
-    .button-group a {
+    .button-group a, .button-group .embed {
       text-decoration: none;
       color: white;
       background-color: #444;
@@ -53,7 +50,7 @@ lets use this code i will provide below but with the updated changes and also ev
       font-size: 1rem;
       transition: background 0.3s;
       user-select: none;
-      cursor: grab; /* for drag & drop */
+      cursor: grab;
     }
 
     .button-group a:hover {
@@ -68,7 +65,6 @@ lets use this code i will provide below but with the updated changes and also ev
       background-color: #218838;
     }
 
-    /* Gear icon container */
     .gear-container {
       position: fixed;
       top: 15px;
@@ -80,7 +76,6 @@ lets use this code i will provide below but with the updated changes and also ev
       z-index: 1000;
     }
 
-    /* Settings menu */
     .settings-menu {
       display: none;
       position: fixed;
@@ -118,7 +113,6 @@ lets use this code i will provide below but with the updated changes and also ev
       background: #666;
     }
 
-    /* Login form */
     .login-form {
       display: flex;
       flex-direction: column;
@@ -154,33 +148,23 @@ lets use this code i will provide below but with the updated changes and also ev
       background: #218838;
     }
 
-    /* Visitor count */
-    .visitor-count {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: #bbb;
-      font-style: italic;
-    }
-
-    /* Admin Mode Banner inside admin panel */
-    #adminBanner {
-      background-color: #28a745;
-      color: #111;
-      font-weight: 700;
-      padding: 8px 12px;
-      border-radius: 5px;
-      margin-bottom: 12px;
+    .admin-banner {
+      background: #0f0;
+      color: #000;
+      font-weight: bold;
+      padding: 8px;
       text-align: center;
-      font-size: 1rem;
+      display: none;
+      border-radius: 5px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
 
   <div class="settings-menu" id="settingsMenu">
-    <!-- Login Form (shown if not logged in) -->
+    <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
       <input type="text" id="username" autocomplete="username" required />
@@ -189,14 +173,16 @@ lets use this code i will provide below but with the updated changes and also ev
       <button type="submit">Log In</button>
     </form>
 
-    <!-- Admin Panel (shown if logged in) -->
     <div id="adminPanel" style="display:none;">
-      <div id="adminBanner">Admin Mode Active</div>
+      <label for="newBtnText">Button Text</label>
+      <input type="text" id="newBtnText" placeholder="Button Label">
+      <label for="newBtnUrl">Button URL or Embed HTML</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or <iframe...>">
+      <label><input type="checkbox" id="isEmbedCheckbox"> This is an embed code</label>
       <button id="addBtn">Add Button</button>
-      <button id="rearrangeBtn">Rearrange Buttons</button>
-      <button id="viewVisitorsBtn">View Visitors</button>
-      <button onclick="logout()">Logout</button>
-      <div class="visitor-count" id="visitorCount">Visitors: 0</div>
+      <button id="rearrangeBtn">Enable Rearrange</button>
+      <button onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button id="logoutBtn">Logout</button>
     </div>
   </div>
 
@@ -205,171 +191,168 @@ lets use this code i will provide below but with the updated changes and also ev
     Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
   </p>
 
-  <div class="button-group" id="buttonGroup">
-    <!-- Buttons will be rendered here -->
-  </div>
+  <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  const gearBtn = document.getElementById('gearBtn');
-  const settingsMenu = document.getElementById('settingsMenu');
-  const loginForm = document.getElementById('loginForm');
-  const adminPanel = document.getElementById('adminPanel');
-  const visitorCountEl = document.getElementById('visitorCount');
-  const buttonGroup = document.getElementById('buttonGroup');
+const allowedUsers = [
+  { username: 'Ryanf17', password: 'G7m#P9xL2@Qz', isAdmin: true },
+  { username: 'User', password: 'Password', isAdmin: false }
+];
 
-  // Your credentials here:
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+const gearBtn = document.getElementById('gearBtn');
+const settingsMenu = document.getElementById('settingsMenu');
+const loginForm = document.getElementById('loginForm');
+const adminPanel = document.getElementById('adminPanel');
+const adminBanner = document.getElementById('adminBanner');
+const buttonGroup = document.getElementById('buttonGroup');
+const logoutBtn = document.getElementById('logoutBtn');
+const addBtn = document.getElementById('addBtn');
+const rearrangeBtn = document.getElementById('rearrangeBtn');
+const newBtnText = document.getElementById('newBtnText');
+const newBtnUrl = document.getElementById('newBtnUrl');
+const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
 
-  // Load buttons from localStorage or default
-  function loadButtons() {
-    const stored = localStorage.getItem('ryansBuildsButtons');
-    if (stored) return JSON.parse(stored);
-    return [
-      { text: 'Home', url: 'index.html' },
-      { text: 'CPS Build Tour', url: 'tour.html' },
-      { text: 'Button 2', url: '#' },
-      { text: 'Button 3', url: '#' },
-      { text: 'Button 4', url: '#' },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
-    ];
+const defaultButtons = [
+  { text: 'Home', url: 'index.html' },
+  { text: 'CPS Build Tour', url: 'tour.html' },
+  { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
+];
+
+gearBtn.addEventListener('click', () => settingsMenu.classList.toggle('active'));
+
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const username = loginForm.username.value.trim();
+  const password = loginForm.password.value;
+  const user = allowedUsers.find(u => u.username === username && u.password === password);
+  if (user) {
+    sessionStorage.setItem('loggedIn', JSON.stringify(user));
+    showAdminPanel(user);
+    alert('Logged in successfully!');
+    settingsMenu.classList.remove('active');
+  } else alert('Incorrect username or password.');
+});
+
+logoutBtn.addEventListener('click', () => {
+  sessionStorage.removeItem('loggedIn');
+  loginForm.style.display = 'flex';
+  adminPanel.style.display = 'none';
+  adminBanner.style.display = 'none';
+  alert('Logged out.');
+});
+
+function showAdminPanel(user) {
+  loginForm.style.display = 'none';
+  if (user.isAdmin) {
+    adminPanel.style.display = 'block';
+    adminBanner.style.display = 'block';
   }
+  renderButtons();
+}
 
-  function saveButtons(buttons) {
-    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+addBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  const text = newBtnText.value.trim();
+  const url = newBtnUrl.value.trim();
+  const isEmbed = isEmbedCheckbox.checked;
+  if (!text || !url) return alert('Please enter both label and URL or embed code.');
+  const saved = getSavedButtons();
+  saved.push({ text, url, isEmbed });
+  localStorage.setItem('ryButtons', JSON.stringify(saved));
+  newBtnText.value = '';
+  newBtnUrl.value = '';
+  isEmbedCheckbox.checked = false;
+  renderButtons();
+});
+
+rearrangeBtn.addEventListener('click', () => {
+  const links = document.querySelectorAll('#buttonGroup a, #buttonGroup .embed');
+  links.forEach(a => {
+    a.setAttribute('draggable', true);
+    a.addEventListener('dragstart', dragStart);
+    a.addEventListener('dragover', dragOver);
+    a.addEventListener('dragend', dragEnd);
+  });
+  alert('Drag and drop enabled. You can now rearrange the buttons.');
+});
+
+let draggedEl = null;
+function dragStart(e) {
+  draggedEl = e.target;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', '');
+}
+function dragOver(e) {
+  e.preventDefault();
+  const target = e.target;
+  if (target && target !== draggedEl && (target.tagName === 'A' || target.classList.contains('embed'))) {
+    const container = target.parentNode;
+    const rect = target.getBoundingClientRect();
+    const next = (e.clientX - rect.left) / rect.width > 0.5;
+    container.insertBefore(draggedEl, next ? target.nextSibling : target);
   }
+}
+function dragEnd() {
+  const newButtons = [];
+  document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(a => {
+    newButtons.push({
+      text: a.dataset.text || a.textContent,
+      url: a.dataset.url || a.href || a.innerHTML,
+      donate: a.classList.contains('donate'),
+      isEmbed: a.classList.contains('embed')
+    });
+  });
+  localStorage.setItem('ryButtons', JSON.stringify(newButtons.filter(b => !defaultButtons.some(d => d.text === b.text))));
+}
 
-  function renderButtons() {
-    buttonGroup.innerHTML = '';
-    const buttons = loadButtons();
-    buttons.forEach(b => {
+function getSavedButtons() {
+  return JSON.parse(localStorage.getItem('ryButtons') || '[]');
+}
+
+function renderButtons() {
+  buttonGroup.innerHTML = '';
+  defaultButtons.forEach(b => {
+    const a = document.createElement('a');
+    a.href = b.url;
+    a.textContent = b.text;
+    if (b.donate) a.classList.add('donate');
+    buttonGroup.appendChild(a);
+  });
+  getSavedButtons().forEach((b, i) => {
+    if (b.isEmbed) {
+      const div = document.createElement('div');
+      div.className = 'embed';
+      div.dataset.text = b.text;
+      div.dataset.url = b.url;
+      div.innerHTML = b.url;
+      buttonGroup.appendChild(div);
+    } else {
       const a = document.createElement('a');
       a.href = b.url;
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
-      buttonGroup.appendChild(a);
-    });
-  }
-
-  // Drag & drop for rearranging buttons
-  let draggedEl = null;
-
-  function dragStart(e) {
-    draggedEl = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
-    draggedEl.classList.add('dragging');
-  }
-
-  function dragOver(e) {
-    e.preventDefault();
-    const target = e.target;
-    if (target && target !== draggedEl && target.tagName === 'A') {
-      const container = target.parentNode;
-      const rect = target.getBoundingClientRect();
-      const next = (e.clientX - rect.left) / rect.width > 0.5;
-      container.insertBefore(draggedEl, next ? target.nextSibling : target);
-    }
-  }
-
-  function dragEnd(e) {
-    draggedEl.classList.remove('dragging');
-    draggedEl = null;
-    // Save new order
-    const buttons = [];
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      buttons.push({
-        text: a.textContent,
-        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
-        donate: a.classList.contains('donate')
-      });
-    });
-    saveButtons(buttons);
-    alert('Buttons rearranged and saved!');
-  }
-
-  function enableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
       a.setAttribute('draggable', true);
+      a.dataset.text = b.text;
+      a.dataset.url = b.url;
       a.addEventListener('dragstart', dragStart);
       a.addEventListener('dragover', dragOver);
       a.addEventListener('dragend', dragEnd);
-    });
-  }
-
-  // Show admin panel
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    visitorCountEl.textContent = 'Visitors: ' + Math.floor(Math.random() * 1000);
-    renderButtons();
-  }
-
-  function logout() {
-    sessionStorage.removeItem('loggedIn');
-    adminPanel.style.display = 'none';
-    loginForm.style.display = 'flex';
-    alert('Logged out.');
-  }
-
-  // Gear button toggles settings menu
-  gearBtn.addEventListener('click', () => {
-    settingsMenu.classList.toggle('active');
-  });
-
-  // Login form submit handler
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = loginForm.username.value.trim();
-    const password = loginForm.password.value;
-
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('loggedIn', 'true');
-      showAdminPanel();
-      alert('Logged in successfully!');
-      settingsMenu.classList.remove('active');
-    } else {
-      alert('Incorrect username or password.');
+      buttonGroup.appendChild(a);
     }
   });
+}
 
-  // Admin buttons
-  document.getElementById('addBtn').onclick = function() {
-    const text = prompt('Enter button text:');
-    if (!text) return alert('Cancelled');
-    const url = prompt('Enter button URL (e.g. index.html):');
-    if (!url) return alert('Cancelled');
-    const buttons = loadButtons();
-    buttons.push({ text, url });
-    saveButtons(buttons);
-    renderButtons();
-    alert('Button added!');
-  };
-
-  document.getElementById('rearrangeBtn').onclick = function() {
-    alert('Drag buttons to rearrange them. Drag cursor enabled.');
-    enableDragAndDrop();
-  };
-
-  document.getElementById('viewVisitorsBtn').onclick = function() {
-    alert(visitorCountEl.textContent);
-  };
-
-  // Close menu if clicked outside
+// Close menu if clicked outside
   document.addEventListener('click', (e) => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
-  // On load, if logged in, show admin panel, else just render buttons
-  if (sessionStorage.getItem('loggedIn') === 'true') {
-    showAdminPanel();
-  } else {
-    renderButtons();
-  }
+const currentUser = JSON.parse(sessionStorage.getItem('loggedIn'));
+if (currentUser) showAdminPanel(currentUser);
+else renderButtons();
 </script>
-
 </body>
 </html>
