@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
     body {
@@ -41,7 +41,7 @@
       max-width: 800px;
     }
 
-    .button-group a, .button-group .embed {
+    .button-group a {
       text-decoration: none;
       color: white;
       background-color: #444;
@@ -85,7 +85,7 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 260px;
+      width: 280px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
@@ -149,13 +149,14 @@
     }
 
     #adminPanel .admin-banner {
-      background: #0f0;
-      color: #000;
+      background: #28a745;
+      color: #111;
       font-weight: bold;
       padding: 8px;
       text-align: center;
       border-radius: 5px;
       margin-bottom: 10px;
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -174,97 +175,233 @@
     <div id="adminPanel" style="display:none;">
       <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
       <label for="newBtnText">Button Text</label>
-      <input type="text" id="newBtnText" placeholder="Button Label">
-      <label for="newBtnUrl">Button URL or Embed HTML</label>
-      <input type="text" id="newBtnUrl" placeholder="https://... or <iframe...>">
-      <label for="newEmbedId">Embed ID (e.g. castle1)</label>
-      <input type="text" id="newEmbedId" placeholder="Required if embed">
-      <label><input type="checkbox" id="isEmbedCheckbox"> This is an embed code</label>
+      <input type="text" id="newBtnText" placeholder="Button Label" />
+      <label for="newBtnUrl">Button URL or Embed URL</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
+      <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
-      <button onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button id="viewVisitorsBtn">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
   </div>
 
-  <h1 id="pageTitle">Ryan's Builds</h1>
-  <p id="pageDescription">
+  <h1>Ryan's Builds</h1>
+  <p>
     Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
   </p>
 
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+  const gearBtn = document.getElementById('gearBtn');
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const visitorCountEl = document.getElementById('visitorCount');
+  const buttonGroup = document.getElementById('buttonGroup');
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
 
-  async function renderButtons() {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/buttons?select=*`, {
-      headers: { apikey: SUPABASE_KEY }
-    });
-    const data = await res.json();
-    const group = document.getElementById('buttonGroup');
-    const title = document.getElementById('pageTitle');
-    const desc = document.getElementById('pageDescription');
-    group.innerHTML = '';
+  // Your admin credentials here (will replace with supabase later)
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-    const hasRegularButtons = data.some(b => !b.is_embed);
-    title.style.display = hasRegularButtons ? '' : 'none';
-    desc.style.display = hasRegularButtons ? '' : 'none';
+  // Default buttons
+  function getDefaultButtons() {
+    return [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
+    ];
+  }
 
-    data.sort((a, b) => a.position - b.position).forEach(btn => {
+  // Load buttons from localStorage or defaults
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) return JSON.parse(stored);
+    return getDefaultButtons();
+  }
+
+  // Save buttons to localStorage
+  function saveButtons(buttons) {
+    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
+  }
+
+  // Render buttons on homepage
+  function renderButtons() {
+    buttonGroup.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach(b => {
       const a = document.createElement('a');
-      a.textContent = btn.text;
-      a.href = btn.is_embed ? `embed.html?id=${btn.id}` : btn.url;
-      a.className = btn.donate ? 'donate' : '';
+      if (b.isEmbed) {
+        // Link to embed.html with encoded embed URL as query param
+        a.href = 'embed.html?video=' + encodeURIComponent(b.url);
+      } else {
+        a.href = b.url;
+      }
+      a.textContent = b.text;
       a.target = '_blank';
-      group.appendChild(a);
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
     });
   }
 
-  document.getElementById('addBtn').addEventListener('click', async () => {
-    const text = document.getElementById('newBtnText').value.trim();
-    const url = document.getElementById('newBtnUrl').value.trim();
-    const embed = document.getElementById('isEmbedCheckbox').checked;
-    const embedId = document.getElementById('newEmbedId').value.trim();
-    if (!text || !url) return alert('Text and URL are required.');
-    if (embed && !embedId) return alert('Embed ID is required for embeds.');
+  // Drag & drop rearranging buttons
+  let draggedEl = null;
+  let rearranging = false;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/buttons?select=position`, { headers: { apikey: SUPABASE_KEY } });
-    const existing = await res.json();
-    const position = (Math.max(0, ...existing.map(b => b.position || 0)) + 1);
+  function dragStart(e) {
+    draggedEl = e.target;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+    draggedEl.classList.add('dragging');
+  }
 
-    const payload = {
-      text,
-      url,
-      is_embed: embed,
-      donate: false,
-      position
-    };
+  function dragOver(e) {
+    e.preventDefault();
+    const target = e.target;
+    if (target && target !== draggedEl && target.tagName === 'A') {
+      const container = target.parentNode;
+      const rect = target.getBoundingClientRect();
+      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+    }
+  }
 
-    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/buttons`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify(payload)
+  function dragEnd(e) {
+    draggedEl.classList.remove('dragging');
+    draggedEl = null;
+    // Save new order
+    const buttons = [];
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        isEmbed: a.href.includes('embed.html?video=')
+      });
     });
+    saveButtons(buttons);
+    alert('Buttons rearranged and saved!');
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+    disableDragAndDrop();
+  }
 
-    if (insertRes.ok) {
-      renderButtons();
-      document.getElementById('newBtnText').value = '';
-      document.getElementById('newBtnUrl').value = '';
-      document.getElementById('newEmbedId').value = '';
-      document.getElementById('isEmbedCheckbox').checked = false;
+  function enableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  function disableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.removeAttribute('draggable');
+      a.removeEventListener('dragstart', dragStart);
+      a.removeEventListener('dragover', dragOver);
+      a.removeEventListener('dragend', dragEnd);
+    });
+  }
+
+  // Toggle rearranging on button click
+  rearrangeBtn.addEventListener('click', () => {
+    if (!rearranging) {
+      rearranging = true;
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      enableDragAndDrop();
+      alert('Drag the buttons to rearrange their order, then release the drag to save.');
     } else {
-      alert('Failed to add button.');
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
     }
   });
 
-  renderButtons();
-</script>
+  // Add button handler
+  document.getElementById('addBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
 
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
+
+    const buttons = loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+    saveButtons(buttons);
+    renderButtons();
+
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    alert('Button added!');
+  });
+
+  // Logout handler
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('loggedIn');
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'flex';
+    alert('Logged out.');
+  });
+
+  // View visitors (placeholder)
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder, implement later
+  });
+
+  // Gear button toggles settings menu
+  gearBtn.addEventListener('click', () => {
+    settingsMenu.classList.toggle('active');
+  });
+
+  // Login form submit handler
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderButtons();
+  }
+
+  // Close menu if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+      settingsMenu.classList.remove('active');
+    }
+  });
+
+  // On page load
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showAdminPanel();
+  } else {
+    renderButtons();
+  }
+</script>
 </body>
 </html>
