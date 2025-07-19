@@ -43,24 +43,20 @@
       box-shadow: 0 0 15px rgba(0,0,0,0.7);
     }
 
-    /* Match your index buttons style */
-    .back-button {
+    a.back-link {
       margin-top: 30px;
-      padding: 10px 20px;
-      background-color: #444;
-      color: white;
-      font-weight: 600;
-      border-radius: 8px;
+      color: #28a745;
       text-decoration: none;
-      cursor: pointer;
-      user-select: none;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
-      display: inline-block;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: 2px solid #28a745;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: background-color 0.3s, color 0.3s;
     }
-
-    .back-button:hover {
-      background-color: #666;
+    a.back-link:hover {
+      background-color: #28a745;
+      color: #111;
     }
   </style>
 </head>
@@ -72,79 +68,60 @@
     <!-- iframe will be inserted here -->
   </div>
 
-  <a href="index.html" class="back-button">← Back to Home</a>
+  <a href="index.html" class="back-link">← Back to Home</a>
 
-<script>
-  function getQueryParams() {
-    const params = {};
-    window.location.search
-      .substring(1)
-      .split('&')
-      .forEach(pair => {
-        const [key, value] = pair.split('=');
-        if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
-      });
-    return params;
-  }
-
-  const params = getQueryParams();
-  const videoUrl = params.video || '';
-  const title = params.title || 'Video Embed';
-
-  document.title = title;
-  document.getElementById('pageTitle').textContent = title;
-
-  function getEmbedSrc(url) {
-    if (!url) return '';
-    console.log('Original video URL param:', url);
-
-    // If url already looks like an embed url, return as is
-    if (url.includes('youtube.com/embed/')) {
-      console.log('URL is already embed URL');
-      return url;
+  <script>
+    function getQueryParams() {
+      const params = {};
+      window.location.search
+        .substring(1)
+        .split('&')
+        .forEach(pair => {
+          const [key, value] = pair.split('=');
+          if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        });
+      return params;
     }
 
-    // If url is a normal youtube watch URL, extract the v= param
-    const watchMatch = url.match(/[?&]v=([^&]+)/);
-    if (watchMatch) {
-      console.log('Extracted video ID from watch URL:', watchMatch[1]);
-      return 'https://www.youtube.com/embed/' + watchMatch[1];
+    const params = getQueryParams();
+    const videoUrl = params.video || '';
+    const title = params.title || 'Video Embed';
+
+    document.title = title;
+    document.getElementById('pageTitle').textContent = title;
+
+    function getEmbedSrc(url) {
+      if (!url) return '';
+      if (url.includes('youtube.com/embed/')) return url;
+
+      const watchMatch = url.match(/[?&]v=([^&]+)/);
+      if (watchMatch) return 'https://www.youtube.com/embed/' + watchMatch[1];
+
+      if (/^[\w-]{11}$/.test(url)) return 'https://www.youtube.com/embed/' + url;
+
+      const shortLinkMatch = url.match(/youtu\.be\/([^?&]+)/);
+      if (shortLinkMatch) return 'https://www.youtube.com/embed/' + shortLinkMatch[1];
+
+      return '';
     }
 
-    // If url looks like just a video ID (11 chars)
-    if (/^[\w-]{11}$/.test(url)) {
-      console.log('URL looks like a video ID');
-      return 'https://www.youtube.com/embed/' + url;
+    const embedSrc = getEmbedSrc(videoUrl);
+
+    if (embedSrc) {
+      const iframe = document.createElement('iframe');
+      iframe.width = '960';
+      iframe.height = '540';
+      iframe.src = embedSrc;
+      iframe.title = title;
+      iframe.allow =
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+
+      document.getElementById('videoContainer').appendChild(iframe);
+    } else {
+      document.getElementById('videoContainer').textContent = 'Invalid or missing video URL.';
     }
-
-    // If url is a youtu.be short link
-    const shortLinkMatch = url.match(/youtu\.be\/([^?&]+)/);
-    if (shortLinkMatch) {
-      console.log('Extracted video ID from youtu.be short link:', shortLinkMatch[1]);
-      return 'https://www.youtube.com/embed/' + shortLinkMatch[1];
-    }
-
-    console.warn('Could not parse video URL for embed:', url);
-    return '';
-  }
-
-  const embedSrc = getEmbedSrc(videoUrl);
-
-  if (embedSrc) {
-    const iframe = document.createElement('iframe');
-    iframe.width = '960';
-    iframe.height = '540';
-    iframe.src = embedSrc;
-    iframe.title = title;
-    iframe.allow =
-      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-    iframe.allowFullscreen = true;
-    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-
-    document.getElementById('videoContainer').appendChild(iframe);
-  } else {
-    document.getElementById('videoContainer').textContent = 'Invalid or missing video URL.';
-  }
-</script>
+  </script>
 </body>
 </html>
