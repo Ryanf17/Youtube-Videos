@@ -179,7 +179,6 @@
       <input type="text" id="newBtnUrl" placeholder="https://...">
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Rearrange Buttons</button>
-      <button id="clearBtn">Remove All</button>
       <button onclick="window.location.href='visitors.html'">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
@@ -193,8 +192,10 @@
   <div class="button-group" id="buttonGroup"></div>
 
 <script>
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+  const allowedUsers = [
+    { username: 'Ryanf17', password: 'G7m#P9xL2@Qz', isAdmin: true },
+    { username: 'User', password: 'Password', isAdmin: false }
+  ];
 
   const gearBtn = document.getElementById('gearBtn');
   const settingsMenu = document.getElementById('settingsMenu');
@@ -205,21 +206,14 @@
   const logoutBtn = document.getElementById('logoutBtn');
   const addBtn = document.getElementById('addBtn');
   const rearrangeBtn = document.getElementById('rearrangeBtn');
-  const clearBtn = document.getElementById('clearBtn');
   const newBtnText = document.getElementById('newBtnText');
   const newBtnUrl = document.getElementById('newBtnUrl');
 
   const defaultButtons = [
     { text: 'Home', url: 'index.html' },
     { text: 'CPS Build Tour', url: 'tour.html' },
-    { text: 'Button 2', url: '#' },
-    { text: 'Button 3', url: '#' },
-    { text: 'Button 4', url: '#' },
     { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true }
   ];
-
-  if (sessionStorage.getItem('loggedIn') === 'true') showAdminPanel();
-  else renderButtons();
 
   gearBtn.addEventListener('click', () => settingsMenu.classList.toggle('active'));
 
@@ -227,9 +221,10 @@
     e.preventDefault();
     const username = loginForm.username.value.trim();
     const password = loginForm.password.value;
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('loggedIn', 'true');
-      showAdminPanel();
+    const user = allowedUsers.find(u => u.username === username && u.password === password);
+    if (user) {
+      sessionStorage.setItem('loggedIn', JSON.stringify(user));
+      showAdminPanel(user);
       alert('Logged in successfully!');
       settingsMenu.classList.remove('active');
     } else alert('Incorrect username or password.');
@@ -243,10 +238,12 @@
     alert('Logged out.');
   });
 
-  function showAdminPanel() {
+  function showAdminPanel(user) {
     loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    adminBanner.style.display = 'block';
+    if (user.isAdmin) {
+      adminPanel.style.display = 'block';
+      adminBanner.style.display = 'block';
+    }
     renderButtons();
   }
 
@@ -264,14 +261,7 @@
   });
 
   rearrangeBtn.addEventListener('click', () => {
-    alert('Drag and drop rearrangement not yet implemented.');
-  });
-
-  clearBtn.addEventListener('click', () => {
-    if (confirm('Remove all custom buttons?')) {
-      localStorage.removeItem('ryButtons');
-      renderButtons();
-    }
+    alert('Drag and drop rearrangement coming soon.');
   });
 
   function getSavedButtons() {
@@ -293,7 +283,6 @@
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
-      // Right-click to remove
       a.addEventListener('contextmenu', e => {
         e.preventDefault();
         if (confirm(`Remove button "${b.text}"?`)) {
@@ -312,6 +301,10 @@
       settingsMenu.classList.remove('active');
     }
   });
+
+  const currentUser = JSON.parse(sessionStorage.getItem('loggedIn'));
+  if (currentUser) showAdminPanel(currentUser);
+  else renderButtons();
 </script>
 </body>
 </html>
