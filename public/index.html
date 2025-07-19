@@ -350,7 +350,7 @@
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  // Your default buttons - used if Supabase is empty
+  // Your default buttons - always shown
   const defaultButtons = [
     { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
     { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
@@ -379,57 +379,53 @@
     return data;
   }
 
-  // --- Insert default buttons to Supabase ---
-  async function insertDefaults() {
-    const inserts = defaultButtons.map(btn => ({
-      text: btn.text,
-      url: btn.url,
-      donate: btn.donate,
-      is_embed: btn.isEmbed
-    }));
-    const { error } = await supabase.from('buttons').insert(inserts);
-    if (error) {
-      alert('Error inserting default buttons: ' + error.message);
-      return false;
-    }
-    return true;
-  }
-
-  // --- Load buttons either from Supabase or fallback to defaults ---
+  // --- Load buttons: merge fetched with defaults (no duplicates by text) ---
   async function loadButtons() {
     let data = await fetchButtons();
-    if (!data || data.length === 0) {
-      // No buttons found, insert defaults then reload
-      const success = await insertDefaults();
-      if (success) {
-        data = await fetchButtons();
-      } else {
-        data = [];
-      }
-    }
-    buttons = data.map(b => ({
+    if (!data) data = [];
+
+    const fetchedButtons = data.map(b => ({
       id: b.id,
       text: b.text,
       url: b.url,
       donate: b.donate,
-      isEmbed: b.is_embed
+      isEmbed: b.is_embed,
     }));
+
+    // Merge default buttons, add only if not already in fetchedButtons by text
+    const mergedButtons = [...fetchedButtons];
+
+    defaultButtons.forEach(defaultBtn => {
+      const exists = fetchedButtons.some(b => b.text === defaultBtn.text);
+      if (!exists) {
+        mergedButtons.push({
+          id: null, // no id — not saved in DB
+          text: defaultBtn.text,
+          url: defaultBtn.url,
+          donate: defaultBtn.donate,
+          isEmbed: defaultBtn.isEmbed,
+        });
+      }
+    });
+
+    buttons = mergedButtons;
     renderButtons();
   }
 
   // --- Save buttons order after rearranging ---
   async function saveButtonsOrder() {
-    // Update the 'order' field or just update id sequence? Here we just update in bulk by deleting all and re-inserting or updating ids accordingly is tricky.
-    // Instead, let's update each button with the current index as 'order' in DB.
     for (let i = 0; i < buttons.length; i++) {
       const btn = buttons[i];
-      const { error } = await supabase
-        .from('buttons')
-        .update({ order: i })
-        .eq('id', btn.id);
-      if (error) {
-        alert('Error saving button order: ' + error.message);
-        return;
+      // Only save if it has an ID (is in DB)
+      if (btn.id !== null) {
+        const { error } = await supabase
+          .from('buttons')
+          .update({ order: i })
+          .eq('id', btn.id);
+        if (error) {
+          alert('Error saving button order: ' + error.message);
+          return;
+        }
       }
     }
   }
@@ -447,7 +443,7 @@
       a.textContent = b.text;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
-      if (editDeleteMode) a.classList.add('admin-editable');
+      if (editDeleteMode && b.id !== null) a.classList.add('admin-editable');
       else a.classList.remove('admin-editable');
       a.dataset.id = b.id;
       buttonGroup.appendChild(a);
@@ -528,214 +524,192 @@
     const target = e.target;
     if (target && target !== draggedEl && target.tagName === 'A') {
       const container = target.parentNode;
-      const rect = target.getBoundingClientRect();
-      const next = (e.clientX - rect.left) / rect.width > 0.5;
-      container.insertBefore(draggedEl, next ? target.nextSibling : target);
+      const draggedIndex = Array.from(container.children).indexOf(draggedEl);
+      const targetIndex = Array.from(container.children).indexOf(target);
+      if (draggedIndex < targetIndex) {
+        container.insertBefore(draggedEl, target.nextSibling);
+      } else {
+        container.insertBefore(draggedEl, target);
+      }
     }
   }
-  async function dragEnd(e) {
+  function dragEnd(e) {
     draggedEl.classList.remove('dragging');
     draggedEl = null;
-    // Save new order
-    const newOrderButtons = [];
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      const id = Number(a.dataset.id);
-      const b = buttons.find(btn => btn.id === id);
-      if (b) newOrderButtons.push(b);
+    // Update buttons array order to match UI
+    const newOrder = [];
+    buttonGroup.querySelectorAll('a').forEach(a => {
+      const id = a.dataset.id === 'null' ? null : Number(a.dataset.id);
+      const btn = buttons.find(b => b.id === id && b.text === a.textContent) || buttons.find(b => b.text === a.textContent);
+      if (btn) newOrder.push(btn);
     });
-    buttons = newOrderButtons;
-    await saveButtonsOrder();
-    alert('Buttons rearranged and saved!');
-    rearranging = false;
-    rearrangeBtn.textContent = 'Enable Rearrange';
-    disableDragAndDrop();
+    buttons = newOrder;
   }
   function enableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      a.setAttribute('draggable', true);
-      a.addEventListener('dragstart', dragStart);
-      a.addEventListener('dragover', dragOver);
-      a.addEventListener('dragend', dragEnd);
+    const links = buttonGroup.querySelectorAll('a');
+    links.forEach(link => {
+      if (link.dataset.id === 'null') return; // skip default buttons (no id)
+      link.setAttribute('draggable', 'true');
+      link.addEventListener('dragstart', dragStart);
+      link.addEventListener('dragover', dragOver);
+      link.addEventListener('dragend', dragEnd);
     });
   }
   function disableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      a.removeAttribute('draggable');
-      a.removeEventListener('dragstart', dragStart);
-      a.removeEventListener('dragover', dragOver);
-      a.removeEventListener('dragend', dragEnd);
+    const links = buttonGroup.querySelectorAll('a');
+    links.forEach(link => {
+      link.removeAttribute('draggable');
+      link.removeEventListener('dragstart', dragStart);
+      link.removeEventListener('dragover', dragOver);
+      link.removeEventListener('dragend', dragEnd);
     });
   }
 
-  // --- Login and Admin UI handlers ---
-  loginForm.addEventListener('submit', (e) => {
+  // --- Admin Login ---
+  loginForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = loginForm.username.value.trim();
     const password = loginForm.password.value;
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('loggedIn', 'true');
-      showAdminPanel();
-      alert('Logged in successfully!');
-      settingsMenu.classList.remove('active');
+      loginForm.style.display = 'none';
+      adminPanel.style.display = 'block';
+      alert('Logged in as Admin!');
     } else {
-      alert('Incorrect username or password.');
+      alert('Invalid username or password');
     }
   });
 
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    renderButtons();
-  }
-
-  logoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem('loggedIn');
-    adminPanel.style.display = 'none';
-    loginForm.style.display = 'flex';
-    editDeletePanel.classList.remove('active');
-    editDeleteMode = false;
-    renderButtons();
-    alert('Logged out.');
-  });
-
-  gearBtn.addEventListener('click', () => {
-    settingsMenu.classList.toggle('active');
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
-      settingsMenu.classList.remove('active');
-    }
-  });
-
-  // --- Add button ---
-  document.getElementById('addBtn').addEventListener('click', async (e) => {
+  // --- Add Button Handler ---
+  document.getElementById('addBtn').addEventListener('click', async e => {
     e.preventDefault();
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     const isEmbed = isEmbedCheckbox.checked;
-    if (!text) return alert('Please enter button text.');
-    if (!url) return alert('Please enter button URL or embed URL.');
+    if (!text || !url) {
+      alert('Please enter both button text and URL.');
+      return;
+    }
     const success = await addButton(text, url, isEmbed);
     if (success) {
       newBtnText.value = '';
       newBtnUrl.value = '';
       isEmbedCheckbox.checked = false;
-      alert('Button added!');
     }
   });
 
-  // --- Rearrange buttons toggle ---
+  // --- Rearrange Buttons ---
   rearrangeBtn.addEventListener('click', () => {
-    if (!rearranging) {
-      rearranging = true;
-      rearrangeBtn.textContent = 'Disable Rearrange';
+    rearranging = !rearranging;
+    if (rearranging) {
+      rearrangeBtn.textContent = 'Save Order';
+      alert('Drag the buttons to rearrange their order, then click "Save Order" to save.');
       enableDragAndDrop();
-      alert('Drag the buttons to rearrange their order, then release the drag to save.');
     } else {
-      rearranging = false;
       rearrangeBtn.textContent = 'Enable Rearrange';
       disableDragAndDrop();
+      saveButtonsOrder();
     }
+  });
+
+  // --- Logout ---
+  logoutBtn.addEventListener('click', () => {
+    adminPanel.style.display = 'none';
+    loginForm.style.display = 'block';
   });
 
   // --- Edit/Delete mode toggle ---
   editDeleteBtn.addEventListener('click', () => {
     editDeleteMode = !editDeleteMode;
     if (editDeleteMode) {
-      editDeletePanel.classList.add('active');
-      editDeleteBtn.textContent = 'Disable Edit/Delete';
-      infoMessage.textContent = 'Please click on the button you want to Edit or Delete.';
-      renderButtons();
+      editDeleteBtn.textContent = 'Exit Edit/Delete Mode';
+      alert('Click any button to Edit or Delete it.');
+      enableEditDelete();
     } else {
-      editDeletePanel.classList.remove('active');
       editDeleteBtn.textContent = 'Edit/Delete';
+      disableEditDelete();
+      editDeletePanel.classList.remove('active');
       editingButtonId = null;
-      clearEditPanelFields();
-      renderButtons();
     }
   });
 
-  // --- When a button is clicked in edit/delete mode ---
-  buttonGroup.addEventListener('click', (e) => {
-    if (!editDeleteMode) return; // do nothing if not in edit mode
-    if (e.target.tagName !== 'A') return;
+  function enableEditDelete() {
+    buttonGroup.querySelectorAll('a').forEach(a => {
+      if (a.dataset.id !== 'null') {
+        a.classList.add('admin-editable');
+        a.addEventListener('click', onButtonEditClick);
+      }
+    });
+  }
+  function disableEditDelete() {
+    buttonGroup.querySelectorAll('a').forEach(a => {
+      a.classList.remove('admin-editable');
+      a.removeEventListener('click', onButtonEditClick);
+    });
+  }
+
+  function onButtonEditClick(e) {
     e.preventDefault();
-    const id = Number(e.target.dataset.id);
-    if (!id) return;
+    if (!editDeleteMode) return;
+    const id = Number(e.currentTarget.dataset.id);
     const btn = buttons.find(b => b.id === id);
-    if (!btn) return;
-    // Fill edit fields
+    if (!btn) {
+      alert('Button not found.');
+      return;
+    }
     editingButtonId = id;
     editBtnText.value = btn.text;
     editBtnUrl.value = btn.url;
     editIsEmbedCheckbox.checked = btn.isEmbed;
-    infoMessage.textContent = `Editing "${btn.text}". Make changes below, then confirm or delete.`;
-  });
-
-  function clearEditPanelFields() {
-    editBtnText.value = '';
-    editBtnUrl.value = '';
-    editIsEmbedCheckbox.checked = false;
-    infoMessage.textContent = 'Please click on the button you want to Edit or Delete.';
+    editDeletePanel.classList.add('active');
   }
 
-  // --- Confirm edit ---
+  // --- Confirm Edit ---
   confirmEditBtn.addEventListener('click', async () => {
-    if (!editingButtonId) {
-      alert('Please select a button to edit by clicking it.');
+    if (editingButtonId === null) return;
+    const newText = editBtnText.value.trim();
+    const newUrl = editBtnUrl.value.trim();
+    const newIsEmbed = editIsEmbedCheckbox.checked;
+    if (!newText || !newUrl) {
+      alert('Please fill out both fields.');
       return;
     }
-    const text = editBtnText.value.trim();
-    const url = editBtnUrl.value.trim();
-    const isEmbed = editIsEmbedCheckbox.checked;
-    if (!text) return alert('Please enter button text.');
-    if (!url) return alert('Please enter button URL or embed URL.');
-    const success = await updateButton(editingButtonId, text, url, isEmbed);
+    const success = await updateButton(editingButtonId, newText, newUrl, newIsEmbed);
     if (success) {
       alert('Button updated!');
+      editDeletePanel.classList.remove('active');
       editingButtonId = null;
-      clearEditPanelFields();
     }
   });
 
-  // --- Delete button ---
+  // --- Delete Button ---
   deleteBtn.addEventListener('click', async () => {
-    if (!editingButtonId) {
-      alert('Please select a button to delete by clicking it.');
-      return;
-    }
+    if (editingButtonId === null) return;
     if (!confirm('Are you sure you want to delete this button?')) return;
     const success = await deleteButton(editingButtonId);
     if (success) {
       alert('Button deleted!');
+      editDeletePanel.classList.remove('active');
       editingButtonId = null;
-      clearEditPanelFields();
     }
   });
 
+  // --- Close Edit Panel ---
   closeEditPanel.addEventListener('click', () => {
     editDeletePanel.classList.remove('active');
-    editDeleteMode = false;
     editingButtonId = null;
-    clearEditPanelFields();
-    editDeleteBtn.textContent = 'Edit/Delete';
-    renderButtons();
   });
 
-  // --- View Visitors (placeholder) ---
-  viewVisitorsBtn.addEventListener('click', () => {
-    alert('Visitor log feature not implemented yet.');
-  });
-
-  // --- On page load ---
-  window.addEventListener('DOMContentLoaded', async () => {
-    const loggedIn = sessionStorage.getItem('loggedIn') === 'true';
-    if (loggedIn) {
-      showAdminPanel();
+  // --- Toggle settings menu ---
+  gearBtn.addEventListener('click', () => {
+    if (settingsMenu.classList.contains('active')) {
+      settingsMenu.classList.remove('active');
+    } else {
+      settingsMenu.classList.add('active');
     }
-    await loadButtons();
   });
+
+  // --- Initial load ---
+  loadButtons();
 </script>
 </body>
 </html>
