@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
     body {
@@ -41,7 +41,7 @@
       max-width: 800px;
     }
 
-    .button-group a, .button-group .embed {
+    .button-group a {
       text-decoration: none;
       color: white;
       background-color: #444;
@@ -85,7 +85,7 @@
       border: 1px solid #444;
       border-radius: 8px;
       padding: 15px;
-      width: 260px;
+      width: 280px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.7);
       color: white;
       font-size: 14px;
@@ -149,13 +149,14 @@
     }
 
     #adminPanel .admin-banner {
-      background: #0f0;
-      color: #000;
+      background: #28a745;
+      color: #111;
       font-weight: bold;
       padding: 8px;
       text-align: center;
       border-radius: 5px;
       margin-bottom: 10px;
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -175,12 +176,12 @@
       <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
       <label for="newBtnText">Button Text</label>
       <input type="text" id="newBtnText" placeholder="Button Label" />
-      <label for="newBtnUrl">Button URL or Embed HTML</label>
-      <input type="text" id="newBtnUrl" placeholder="https://... or &lt;iframe...&gt;" />
-      <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed code</label>
+      <label for="newBtnUrl">Button URL or Embed URL</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
+      <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
-      <button onclick="window.location.href='visitors.html'">View Visitors</button>
+      <button id="viewVisitorsBtn">View Visitors</button>
       <button id="logoutBtn">Logout</button>
     </div>
   </div>
@@ -199,66 +200,57 @@
   const adminPanel = document.getElementById('adminPanel');
   const visitorCountEl = document.getElementById('visitorCount');
   const buttonGroup = document.getElementById('buttonGroup');
+  const newBtnText = document.getElementById('newBtnText');
+  const newBtnUrl = document.getElementById('newBtnUrl');
+  const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+  const rearrangeBtn = document.getElementById('rearrangeBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+
+  // Your admin credentials here (will replace with supabase later)
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
   // Default buttons
-  const defaultButtons = [
-    { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
-    { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
-    { text: 'Button 2', url: '#', donate: false, isEmbed: false },
-    { text: 'Button 3', url: '#', donate: false, isEmbed: false },
-    { text: 'Button 4', url: '#', donate: false, isEmbed: false },
-    { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
-  ];
-
-  // Load buttons from localStorage or use defaults
-  function loadButtons() {
-    try {
-      const stored = localStorage.getItem('ryansBuildsButtons');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // ignore JSON errors
-    }
-    return defaultButtons;
+  function getDefaultButtons() {
+    return [
+      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
+      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
+      { text: 'Button 2', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 3', url: '#', donate: false, isEmbed: false },
+      { text: 'Button 4', url: '#', donate: false, isEmbed: false },
+      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
+    ];
   }
 
+  // Load buttons from localStorage or defaults
+  function loadButtons() {
+    const stored = localStorage.getItem('ryansBuildsButtons');
+    if (stored) return JSON.parse(stored);
+    return getDefaultButtons();
+  }
+
+  // Save buttons to localStorage
   function saveButtons(buttons) {
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
-  // Render buttons on page
+  // Render buttons on homepage
   function renderButtons() {
     buttonGroup.innerHTML = '';
     const buttons = loadButtons();
     buttons.forEach(b => {
+      const a = document.createElement('a');
       if (b.isEmbed) {
-        // Embed code: create a container with embed HTML inside, styled as a small card button
-        const div = document.createElement('div');
-        div.className = 'embed';
-        div.style.cursor = 'default';
-        div.style.padding = '0';
-        div.style.borderRadius = '8px';
-        div.style.overflow = 'hidden';
-        div.style.width = '240px';
-        div.style.height = '135px';
-        div.style.backgroundColor = '#222';
-        div.style.display = 'inline-block';
-        div.style.userSelect = 'none';
-        div.innerHTML = b.url; // url holds the embed iframe HTML
-        buttonGroup.appendChild(div);
+        // Link to embed.html with encoded embed URL as query param
+        a.href = 'embed.html?video=' + encodeURIComponent(b.url);
       } else {
-        // Normal button
-        const a = document.createElement('a');
         a.href = b.url;
-        a.textContent = b.text;
-        a.target = '_blank';
-        if (b.donate) a.classList.add('donate');
-        buttonGroup.appendChild(a);
       }
+      a.textContent = b.text;
+      a.target = '_blank';
+      if (b.donate) a.classList.add('donate');
+      buttonGroup.appendChild(a);
     });
   }
 
@@ -267,7 +259,6 @@
   let rearranging = false;
 
   function dragStart(e) {
-    if (!rearranging) return;
     draggedEl = e.target;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', draggedEl.outerHTML);
@@ -275,10 +266,9 @@
   }
 
   function dragOver(e) {
-    if (!rearranging) return;
     e.preventDefault();
     const target = e.target;
-    if (target && target !== draggedEl && (target.tagName === 'A' || target.classList.contains('embed'))) {
+    if (target && target !== draggedEl && target.tagName === 'A') {
       const container = target.parentNode;
       const rect = target.getBoundingClientRect();
       const next = (e.clientX - rect.left) / rect.width > 0.5;
@@ -287,68 +277,90 @@
   }
 
   function dragEnd(e) {
-    if (!rearranging) return;
     draggedEl.classList.remove('dragging');
     draggedEl = null;
-
-    // Save new order of buttons
+    // Save new order
     const buttons = [];
-    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
-      if (el.tagName === 'A') {
-        buttons.push({
-          text: el.textContent,
-          url: el.href.includes(window.location.origin) ? el.getAttribute('href') : el.href,
-          donate: el.classList.contains('donate'),
-          isEmbed: false
-        });
-      } else {
-        buttons.push({
-          text: 'Embedded Video',
-          url: el.innerHTML,
-          donate: false,
-          isEmbed: true
-        });
-      }
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      buttons.push({
+        text: a.textContent,
+        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
+        donate: a.classList.contains('donate'),
+        isEmbed: a.href.includes('embed.html?video=')
+      });
     });
     saveButtons(buttons);
     alert('Buttons rearranged and saved!');
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+    disableDragAndDrop();
   }
 
   function enableDragAndDrop() {
-    rearranging = !rearranging;
-    const btn = document.getElementById('rearrangeBtn');
-    btn.textContent = rearranging ? 'Disable Rearrange' : 'Enable Rearrange';
-
-    document.querySelectorAll('#buttonGroup a, #buttonGroup .embed').forEach(el => {
-      if (rearranging) {
-        el.setAttribute('draggable', true);
-        el.style.cursor = 'grab';
-        el.addEventListener('dragstart', dragStart);
-        el.addEventListener('dragover', dragOver);
-        el.addEventListener('dragend', dragEnd);
-      } else {
-        el.removeAttribute('draggable');
-        el.style.cursor = el.tagName === 'A' ? 'pointer' : 'default';
-        el.removeEventListener('dragstart', dragStart);
-        el.removeEventListener('dragover', dragOver);
-        el.removeEventListener('dragend', dragEnd);
-      }
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.setAttribute('draggable', true);
+      a.addEventListener('dragstart', dragStart);
+      a.addEventListener('dragover', dragOver);
+      a.addEventListener('dragend', dragEnd);
     });
   }
 
-  // Show admin panel
-  function showAdminPanel() {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    renderButtons();
+  function disableDragAndDrop() {
+    document.querySelectorAll('#buttonGroup a').forEach(a => {
+      a.removeAttribute('draggable');
+      a.removeEventListener('dragstart', dragStart);
+      a.removeEventListener('dragover', dragOver);
+      a.removeEventListener('dragend', dragEnd);
+    });
   }
 
-  function logout() {
+  // Toggle rearranging on button click
+  rearrangeBtn.addEventListener('click', () => {
+    if (!rearranging) {
+      rearranging = true;
+      rearrangeBtn.textContent = 'Disable Rearrange';
+      enableDragAndDrop();
+      alert('Drag the buttons to rearrange their order, then release the drag to save.');
+    } else {
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
+    }
+  });
+
+  // Add button handler
+  document.getElementById('addBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = newBtnText.value.trim();
+    const url = newBtnUrl.value.trim();
+    const isEmbed = isEmbedCheckbox.checked;
+
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
+
+    const buttons = loadButtons();
+    buttons.push({ text, url, donate: false, isEmbed });
+    saveButtons(buttons);
+    renderButtons();
+
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    alert('Button added!');
+  });
+
+  // Logout handler
+  logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
     loginForm.style.display = 'flex';
     alert('Logged out.');
-  }
+  });
+
+  // View visitors (placeholder)
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder, implement later
+  });
 
   // Gear button toggles settings menu
   gearBtn.addEventListener('click', () => {
@@ -356,9 +368,6 @@
   });
 
   // Login form submit handler
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
-
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = loginForm.username.value.trim();
@@ -374,39 +383,11 @@
     }
   });
 
-  // Admin add button
-  document.getElementById('addBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    const text = document.getElementById('newBtnText').value.trim();
-    const url = document.getElementById('newBtnUrl').value.trim();
-    const isEmbed = document.getElementById('isEmbedCheckbox').checked;
-
-    if (!text) return alert('Please enter button text.');
-    if (!url) return alert('Please enter button URL or embed code.');
-
-    const buttons = loadButtons();
-    buttons.push({ text, url, donate: false, isEmbed });
-    saveButtons(buttons);
-
+  function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
     renderButtons();
-    document.getElementById('newBtnText').value = '';
-    document.getElementById('newBtnUrl').value = '';
-    document.getElementById('isEmbedCheckbox').checked = false;
-
-    alert('Button added!');
-  });
-
-  // Rearrange button toggles drag and drop
-  document.getElementById('rearrangeBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    enableDragAndDrop();
-  });
-
-  // Logout button
-  document.getElementById('logoutBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    logout();
-  });
+  }
 
   // Close menu if clicked outside
   document.addEventListener('click', (e) => {
@@ -415,13 +396,12 @@
     }
   });
 
-  // On load, check if logged in, else just render buttons
+  // On page load
   if (sessionStorage.getItem('loggedIn') === 'true') {
     showAdminPanel();
   } else {
     renderButtons();
   }
 </script>
-
 </body>
 </html>
