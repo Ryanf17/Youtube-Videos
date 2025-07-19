@@ -51,6 +51,7 @@
       transition: background 0.3s;
       user-select: none;
       cursor: grab;
+      position: relative;
     }
 
     .button-group a:hover {
@@ -96,7 +97,8 @@
       display: block;
     }
 
-    .settings-menu button {
+    .settings-menu button,
+    .settings-menu .edit-delete-btn {
       display: block;
       width: 100%;
       margin-bottom: 10px;
@@ -108,8 +110,11 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.3s;
+      box-sizing: border-box;
+      user-select: none;
     }
-    .settings-menu button:hover {
+    .settings-menu button:hover,
+    .settings-menu .edit-delete-btn:hover {
       background: #666;
     }
 
@@ -158,6 +163,53 @@
       margin-bottom: 10px;
       font-size: 1rem;
     }
+
+    /* Admin button list styling */
+    #adminPanel .button-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 5px;
+      background: #222;
+    }
+
+    #adminPanel .button-list div.button-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #333;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      border-radius: 5px;
+      user-select: none;
+    }
+
+    #adminPanel .button-list div.button-item span {
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      padding-right: 8px;
+    }
+
+    #adminPanel .button-list div.button-item button {
+      margin-left: 5px;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: #555;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+    }
+    #adminPanel .button-list div.button-item button:hover {
+      background: #777;
+    }
+
   </style>
 </head>
 <body>
@@ -174,6 +226,11 @@
 
     <div id="adminPanel" style="display:none;">
       <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+
+      <div class="button-list" id="adminButtonList">
+        <!-- Admin list of buttons with Edit/Delete will appear here -->
+      </div>
+
       <label for="newBtnText">Button Text</label>
       <input type="text" id="newBtnText" placeholder="Button Label" />
       <label for="newBtnUrl">Button URL or Embed URL</label>
@@ -205,9 +262,14 @@
   const rearrangeBtn = document.getElementById('rearrangeBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+  const adminButtonList = document.getElementById('adminButtonList');
 
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+  let editIndex = null; // Track which button is being edited
+  let rearranging = false;
+  let draggedEl = null;
 
   function getDefaultButtons() {
     return [
@@ -230,13 +292,13 @@
     localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
   }
 
+  // Render the public buttons (links)
   function renderButtons() {
     buttonGroup.innerHTML = '';
     const buttons = loadButtons();
     buttons.forEach(b => {
       const a = document.createElement('a');
       if (b.isEmbed) {
-        // Pass both video and title for embed page
         a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
       } else {
         a.href = b.url;
@@ -248,9 +310,71 @@
     });
   }
 
-  let draggedEl = null;
-  let rearranging = false;
+  // Render the admin list of buttons with Edit/Delete
+  function renderAdminButtons() {
+    adminButtonList.innerHTML = '';
+    const buttons = loadButtons();
+    buttons.forEach((b, i) => {
+      const div = document.createElement('div');
+      div.className = 'button-item';
 
+      // Show button text (truncated if too long)
+      const span = document.createElement('span');
+      span.textContent = b.text;
+      div.appendChild(span);
+
+      // Edit button
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.title = 'Edit this button';
+      editBtn.addEventListener('click', () => startEditButton(i));
+      div.appendChild(editBtn);
+
+      // Delete button
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete this button';
+      delBtn.addEventListener('click', () => deleteButton(i));
+      div.appendChild(delBtn);
+
+      adminButtonList.appendChild(div);
+    });
+  }
+
+  // Start editing a button - load its data into inputs and change Add button to Save
+  function startEditButton(index) {
+    const buttons = loadButtons();
+    const b = buttons[index];
+    newBtnText.value = b.text;
+    newBtnUrl.value = b.url;
+    isEmbedCheckbox.checked = b.isEmbed;
+    editIndex = index;
+    addBtn.textContent = 'Save Changes';
+  }
+
+  // Delete a button by index
+  function deleteButton(index) {
+    if (!confirm('Are you sure you want to delete this button?')) return;
+    const buttons = loadButtons();
+    buttons.splice(index, 1);
+    saveButtons(buttons);
+    renderButtons();
+    renderAdminButtons();
+    if(editIndex !== null && editIndex === index) {
+      clearForm();
+    }
+  }
+
+  // Clear inputs and reset edit mode
+  function clearForm() {
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    editIndex = null;
+    addBtn.textContent = 'Add Button';
+  }
+
+  // Drag & drop handlers for rearranging buttons
   function dragStart(e) {
     draggedEl = e.target;
     e.dataTransfer.effectAllowed = 'move';
@@ -260,11 +384,11 @@
 
   function dragOver(e) {
     e.preventDefault();
-    const target = e.target;
-    if (target && target !== draggedEl && target.tagName === 'A') {
+    const target = e.target.closest('.button-item');
+    if (target && target !== draggedEl) {
       const container = target.parentNode;
       const rect = target.getBoundingClientRect();
-      const next = (e.clientX - rect.left) / rect.width > 0.5;
+      const next = (e.clientY - rect.top) / rect.height > 0.5;
       container.insertBefore(draggedEl, next ? target.nextSibling : target);
     }
   }
@@ -272,16 +396,18 @@
   function dragEnd(e) {
     draggedEl.classList.remove('dragging');
     draggedEl = null;
-    const buttons = [];
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      buttons.push({
-        text: a.textContent,
-        url: a.href.includes(window.location.origin) ? a.getAttribute('href') : a.href,
-        donate: a.classList.contains('donate'),
-        isEmbed: a.href.includes('embed.html?video=')
-      });
+    // Rebuild buttons array in new order from admin list
+    const newOrder = [];
+    adminButtonList.querySelectorAll('.button-item span').forEach(span => {
+      const text = span.textContent;
+      // Find corresponding button by text (assumes unique text)
+      // Better would be using indexes or IDs but this suffices here
+      const allButtons = loadButtons();
+      const found = allButtons.find(b => b.text === text);
+      if (found) newOrder.push(found);
     });
-    saveButtons(buttons);
+    saveButtons(newOrder);
+    renderButtons();
     alert('Buttons rearranged and saved!');
     rearranging = false;
     rearrangeBtn.textContent = 'Enable Rearrange';
@@ -289,37 +415,28 @@
   }
 
   function enableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      a.setAttribute('draggable', true);
-      a.addEventListener('dragstart', dragStart);
-      a.addEventListener('dragover', dragOver);
-      a.addEventListener('dragend', dragEnd);
+    adminButtonList.querySelectorAll('.button-item').forEach(div => {
+      div.setAttribute('draggable', true);
+      div.addEventListener('dragstart', dragStart);
+      div.addEventListener('dragover', dragOver);
+      div.addEventListener('dragend', dragEnd);
     });
   }
 
   function disableDragAndDrop() {
-    document.querySelectorAll('#buttonGroup a').forEach(a => {
-      a.removeAttribute('draggable');
-      a.removeEventListener('dragstart', dragStart);
-      a.removeEventListener('dragover', dragOver);
-      a.removeEventListener('dragend', dragEnd);
+    adminButtonList.querySelectorAll('.button-item').forEach(div => {
+      div.removeAttribute('draggable');
+      div.removeEventListener('dragstart', dragStart);
+      div.removeEventListener('dragover', dragOver);
+      div.removeEventListener('dragend', dragEnd);
     });
   }
 
-  rearrangeBtn.addEventListener('click', () => {
-    if (!rearranging) {
-      rearranging = true;
-      rearrangeBtn.textContent = 'Disable Rearrange';
-      enableDragAndDrop();
-      alert('Drag the buttons to rearrange their order, then release the drag to save.');
-    } else {
-      rearranging = false;
-      rearrangeBtn.textContent = 'Enable Rearrange';
-      disableDragAndDrop();
-    }
-  });
+  // Elements used inside event listeners
+  const addBtn = document.getElementById('addBtn');
 
-  document.getElementById('addBtn').addEventListener('click', (e) => {
+  // Add or Save button
+  addBtn.addEventListener('click', e => {
     e.preventDefault();
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
@@ -329,20 +446,29 @@
     if (!url) return alert('Please enter button URL or embed URL.');
 
     const buttons = loadButtons();
-    buttons.push({ text, url, donate: false, isEmbed });
+
+    if (editIndex !== null) {
+      // Save changes to existing button
+      buttons[editIndex] = { text, url, donate: false, isEmbed };
+      editIndex = null;
+      addBtn.textContent = 'Add Button';
+    } else {
+      // Add new button
+      buttons.push({ text, url, donate: false, isEmbed });
+    }
+
     saveButtons(buttons);
     renderButtons();
-
-    newBtnText.value = '';
-    newBtnUrl.value = '';
-    isEmbedCheckbox.checked = false;
-    alert('Button added!');
+    renderAdminButtons();
+    clearForm();
+    alert(editIndex === null ? 'Button added!' : 'Button updated!');
   });
 
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
     loginForm.style.display = 'flex';
+    clearForm();
     alert('Logged out.');
   });
 
@@ -373,6 +499,7 @@
     loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
     renderButtons();
+    renderAdminButtons();
   }
 
   document.addEventListener('click', (e) => {
