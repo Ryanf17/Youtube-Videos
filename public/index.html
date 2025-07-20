@@ -62,7 +62,6 @@
       background-color: #28a745;
       font-weight: bold;
     }
-
     .button-group a.donate:hover {
       background-color: #218838;
     }
@@ -114,7 +113,6 @@
       box-sizing: border-box;
       user-select: none;
     }
-
     .settings-menu button:hover,
     .settings-menu .edit-delete-btn:hover {
       background: #666;
@@ -166,6 +164,7 @@
       font-size: 1rem;
     }
 
+    /* Admin button list styling */
     #adminPanel .button-list {
       max-height: 300px;
       overflow-y: auto;
@@ -176,8 +175,9 @@
       background: #222;
     }
 
-    .button-item {
+    #adminPanel .button-list div.button-item {
       display: flex;
+      justify-content: space-between;
       align-items: center;
       background: #333;
       padding: 6px 8px;
@@ -186,18 +186,7 @@
       user-select: none;
     }
 
-    .button-item .drag-handle {
-      cursor: grab;
-      margin-right: 10px;
-      font-size: 18px;
-      user-select: none;
-    }
-
-    .button-item.dragging {
-      opacity: 0.5;
-    }
-
-    .button-item span {
+    #adminPanel .button-list div.button-item span {
       flex: 1;
       text-align: left;
       overflow: hidden;
@@ -206,19 +195,21 @@
       padding-right: 8px;
     }
 
-    .button-item button {
+    #adminPanel .button-list div.button-item button {
       margin-left: 5px;
+      width: auto;
       padding: 4px 8px;
       font-size: 12px;
       background: #555;
       border-radius: 4px;
       border: none;
       cursor: pointer;
+      user-select: none;
     }
-
-    .button-item button:hover {
+    #adminPanel .button-list div.button-item button:hover {
       background: #777;
     }
+
   </style>
 </head>
 <body>
@@ -227,21 +218,23 @@
   <div class="settings-menu" id="settingsMenu">
     <form id="loginForm" class="login-form">
       <label for="username">Username</label>
-      <input type="text" id="username" required />
+      <input type="text" id="username" autocomplete="username" required />
       <label for="password">Password</label>
-      <input type="password" id="password" required />
+      <input type="password" id="password" autocomplete="current-password" required />
       <button type="submit">Log In</button>
     </form>
 
     <div id="adminPanel" style="display:none;">
-      <div class="admin-banner">Admin Mode Enabled</div>
+      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
 
-      <div class="button-list" id="adminButtonList"></div>
+      <div class="button-list" id="adminButtonList">
+        <!-- Admin list of buttons with Edit/Delete will appear here -->
+      </div>
 
       <label for="newBtnText">Button Text</label>
       <input type="text" id="newBtnText" placeholder="Button Label" />
       <label for="newBtnUrl">Button URL or Embed URL</label>
-      <input type="text" id="newBtnUrl" placeholder="https://..." />
+      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
       <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
@@ -252,75 +245,83 @@
 
   <h1>Ryan's Builds</h1>
   <p>
-    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens.
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
   </p>
 
   <div class="button-group" id="buttonGroup"></div>
 
-<script>
-  const ADMIN_USERNAME = 'Ryanf17';
-  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  const buttonGroup = document.getElementById('buttonGroup');
-  const adminPanel = document.getElementById('adminPanel');
-  const loginForm = document.getElementById('loginForm');
-  const settingsMenu = document.getElementById('settingsMenu');
+  const SUPABASE_URL = 'https://your-supabase-url.supabase.co'; // REPLACE
+  const SUPABASE_ANON_KEY = 'your-anon-key'; // REPLACE
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const gearBtn = document.getElementById('gearBtn');
-  const adminButtonList = document.getElementById('adminButtonList');
-
+  const settingsMenu = document.getElementById('settingsMenu');
+  const loginForm = document.getElementById('loginForm');
+  const adminPanel = document.getElementById('adminPanel');
+  const buttonGroup = document.getElementById('buttonGroup');
   const newBtnText = document.getElementById('newBtnText');
   const newBtnUrl = document.getElementById('newBtnUrl');
   const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
-  const addBtn = document.getElementById('addBtn');
   const rearrangeBtn = document.getElementById('rearrangeBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+  const adminButtonList = document.getElementById('adminButtonList');
+  const addBtn = document.getElementById('addBtn');
 
-  let editIndex = null;
+  const ADMIN_USERNAME = 'Ryanf17';
+  const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+  let editId = null; // ID of button being edited
   let rearranging = false;
   let draggedEl = null;
 
-  function getDefaultButtons() {
-    return [
-      { text: 'Home', url: 'index.html', donate: false, isEmbed: false },
-      { text: 'CPS Build Tour', url: 'tour.html', donate: false, isEmbed: false },
-      { text: 'Donate', url: 'https://plsdonate.me/ryfo_17', donate: true, isEmbed: false }
-    ];
+  // Load buttons from Supabase, ordered by position asc
+  async function loadButtons() {
+    let { data, error } = await supabase
+      .from('buttons')
+      .select('*')
+      .order('position', { ascending: true });
+
+    if (error) {
+      alert('Error loading buttons: ' + error.message);
+      return [];
+    }
+
+    // If no buttons, you might want to create defaults here (optional)
+    return data;
   }
 
-  function loadButtons() {
-    const stored = localStorage.getItem('ryansBuildsButtons');
-    return stored ? JSON.parse(stored) : getDefaultButtons();
-  }
-
-  function saveButtons(buttons) {
-    localStorage.setItem('ryansBuildsButtons', JSON.stringify(buttons));
-  }
-
-  function renderButtons() {
+  // Render the public buttons
+  async function renderButtons() {
     buttonGroup.innerHTML = '';
-    const buttons = loadButtons();
+    const buttons = await loadButtons();
+
     buttons.forEach(b => {
       const a = document.createElement('a');
+      if (b.is_embed) {
+        a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
+      } else {
+        a.href = b.url;
+      }
       a.textContent = b.text;
-      a.href = b.isEmbed ? `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}` : b.url;
       a.target = '_blank';
       if (b.donate) a.classList.add('donate');
       buttonGroup.appendChild(a);
     });
   }
 
-  function renderAdminButtons() {
+  // Render admin list of buttons with Edit/Delete, drag handle
+  async function renderAdminButtons() {
     adminButtonList.innerHTML = '';
-    const buttons = loadButtons();
-    buttons.forEach((b, i) => {
+    const buttons = await loadButtons();
+
+    buttons.forEach(b => {
       const div = document.createElement('div');
       div.className = 'button-item';
-
-      const dragHandle = document.createElement('span');
-      dragHandle.className = 'drag-handle';
-      dragHandle.textContent = '⋮⋮';
-      div.appendChild(dragHandle);
 
       const span = document.createElement('span');
       span.textContent = b.text;
@@ -328,174 +329,255 @@
 
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
-      editBtn.onclick = () => startEditButton(i);
+      editBtn.title = 'Edit this button';
+      editBtn.addEventListener('click', () => startEditButton(b));
       div.appendChild(editBtn);
 
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
-      delBtn.onclick = () => deleteButton(i);
+      delBtn.title = 'Delete this button';
+      delBtn.addEventListener('click', () => deleteButton(b.id));
       div.appendChild(delBtn);
 
       adminButtonList.appendChild(div);
     });
-
-    if (rearranging) enableDragAndDrop();
   }
 
-  function startEditButton(index) {
-    const b = loadButtons()[index];
-    newBtnText.value = b.text;
-    newBtnUrl.value = b.url;
-    isEmbedCheckbox.checked = b.isEmbed;
-    editIndex = index;
+  // Start editing: fill inputs, set editId
+  function startEditButton(button) {
+    newBtnText.value = button.text;
+    newBtnUrl.value = button.url;
+    isEmbedCheckbox.checked = button.is_embed;
+    editId = button.id;
     addBtn.textContent = 'Save Changes';
   }
 
-  function deleteButton(index) {
-    if (!confirm('Delete this button?')) return;
-    const buttons = loadButtons();
-    buttons.splice(index, 1);
-    saveButtons(buttons);
-    renderButtons();
-    renderAdminButtons();
+  // Delete button by ID
+  async function deleteButton(id) {
+    if (!confirm('Are you sure you want to delete this button?')) return;
+
+    const { error } = await supabase
+      .from('buttons')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Failed to delete: ' + error.message);
+      return;
+    }
+
+    alert('Button deleted.');
+    clearForm();
+    await renderButtons();
+    await renderAdminButtons();
   }
 
+  // Clear form and reset edit mode
   function clearForm() {
     newBtnText.value = '';
     newBtnUrl.value = '';
     isEmbedCheckbox.checked = false;
-    editIndex = null;
+    editId = null;
     addBtn.textContent = 'Add Button';
   }
 
-  addBtn.onclick = (e) => {
+  // Add or Save button handler
+  addBtn.addEventListener('click', async (e) => {
     e.preventDefault();
+
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     const isEmbed = isEmbedCheckbox.checked;
 
-    if (!text || !url) return alert('Text and URL are required.');
-    const buttons = loadButtons();
+    if (!text) return alert('Please enter button text.');
+    if (!url) return alert('Please enter button URL or embed URL.');
 
-    if (editIndex !== null) {
-      buttons[editIndex] = { text, url, donate: false, isEmbed };
-      editIndex = null;
+    if (editId) {
+      // Update existing button
+      const { error } = await supabase
+        .from('buttons')
+        .update({ text, url, is_embed: isEmbed })
+        .eq('id', editId);
+
+      if (error) {
+        alert('Failed to update button: ' + error.message);
+        return;
+      }
+      alert('Button updated!');
     } else {
-      buttons.push({ text, url, donate: false, isEmbed });
+      // Add new button with position = max position + 1
+      const { data: buttons, error: fetchError } = await supabase
+        .from('buttons')
+        .select('position')
+        .order('position', { ascending: false })
+        .limit(1);
+
+      if (fetchError) {
+        alert('Error fetching positions: ' + fetchError.message);
+        return;
+      }
+
+      const maxPosition = buttons.length ? buttons[0].position : 0;
+
+      const { error } = await supabase
+        .from('buttons')
+        .insert([{ text, url, is_embed: isEmbed, donate: false, position: maxPosition + 1 }]);
+
+      if (error) {
+        alert('Failed to add button: ' + error.message);
+        return;
+      }
+      alert('Button added!');
     }
 
-    saveButtons(buttons);
-    renderButtons();
-    renderAdminButtons();
     clearForm();
-  };
+    await renderButtons();
+    await renderAdminButtons();
+  });
 
-  rearrangeBtn.onclick = () => {
-    rearranging = !rearranging;
-    rearrangeBtn.textContent = rearranging ? 'Finish Rearranging' : 'Enable Rearrange';
-    if (rearranging) {
-      enableDragAndDrop();
-    } else {
-      disableDragAndDrop();
-    }
-  };
-
-  function enableDragAndDrop() {
-    const items = adminButtonList.querySelectorAll('.button-item');
-    items.forEach(item => {
-      item.setAttribute('draggable', true);
-      item.ondragstart = dragStart;
-      item.ondragover = dragOver;
-      item.ondragend = dragEnd;
-    });
-  }
-
-  function disableDragAndDrop() {
-    adminButtonList.querySelectorAll('.button-item').forEach(item => {
-      item.removeAttribute('draggable');
-      item.ondragstart = null;
-      item.ondragover = null;
-      item.ondragend = null;
-    });
-  }
-
+  // Drag & drop handlers for rearranging buttons
   function dragStart(e) {
-    draggedEl = e.currentTarget;
+    draggedEl = e.target;
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedEl.outerHTML);
     draggedEl.classList.add('dragging');
   }
 
   function dragOver(e) {
     e.preventDefault();
-    const target = e.currentTarget;
-    if (target !== draggedEl) {
+    const target = e.target.closest('.button-item');
+    if (target && target !== draggedEl) {
+      const container = target.parentNode;
       const rect = target.getBoundingClientRect();
-      const next = (e.clientY - rect.top) > rect.height / 2;
-      adminButtonList.insertBefore(draggedEl, next ? target.nextSibling : target);
+      const next = (e.clientY - rect.top) / rect.height > 0.5;
+      container.insertBefore(draggedEl, next ? target.nextSibling : target);
     }
   }
 
-  function dragEnd() {
+  async function dragEnd(e) {
     draggedEl.classList.remove('dragging');
     draggedEl = null;
 
+    // Rebuild buttons array with new positions
     const newOrder = [];
-    adminButtonList.querySelectorAll('.button-item span:nth-child(2)').forEach(span => {
+    adminButtonList.querySelectorAll('.button-item span').forEach((span, index) => {
       const text = span.textContent;
-      const found = loadButtons().find(b => b.text === text);
-      if (found) newOrder.push(found);
+      const allButtons = adminButtonListButtonsCache;
+      const found = allButtons.find(b => b.text === text);
+      if (found) newOrder.push({ ...found, position: index + 1 });
     });
 
-    saveButtons(newOrder);
-    renderButtons();
-    alert('Order saved!');
+    // Update positions in Supabase
+    for (const btn of newOrder) {
+      const { error } = await supabase
+        .from('buttons')
+        .update({ position: btn.position })
+        .eq('id', btn.id);
+      if (error) {
+        alert('Error updating positions: ' + error.message);
+        return;
+      }
+    }
+
+    alert('Buttons rearranged and saved!');
+    rearranging = false;
+    rearrangeBtn.textContent = 'Enable Rearrange';
+    disableDragAndDrop();
+    await renderButtons();
+    await renderAdminButtons();
   }
 
-  logoutBtn.onclick = () => {
+  function enableDragAndDrop() {
+    adminButtonList.querySelectorAll('.button-item').forEach(div => {
+      div.setAttribute('draggable', true);
+      div.addEventListener('dragstart', dragStart);
+      div.addEventListener('dragover', dragOver);
+      div.addEventListener('dragend', dragEnd);
+    });
+  }
+
+  function disableDragAndDrop() {
+    adminButtonList.querySelectorAll('.button-item').forEach(div => {
+      div.removeAttribute('draggable');
+      div.removeEventListener('dragstart', dragStart);
+      div.removeEventListener('dragover', dragOver);
+      div.removeEventListener('dragend', dragEnd);
+    });
+  }
+
+  rearrangeBtn.addEventListener('click', () => {
+    rearranging = !rearranging;
+    if (rearranging) {
+      enableDragAndDrop();
+      rearrangeBtn.textContent = 'Disable Rearrange';
+    } else {
+      disableDragAndDrop();
+      rearrangeBtn.textContent = 'Enable Rearrange';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
     loginForm.style.display = 'flex';
     clearForm();
-  };
+    alert('Logged out.');
+  });
 
-  viewVisitorsBtn.onclick = () => {
-    window.location.href = 'visitors.html';
-  };
+  viewVisitorsBtn.addEventListener('click', () => {
+    window.location.href = 'visitors.html'; // Placeholder
+  });
 
-  gearBtn.onclick = () => {
+  gearBtn.addEventListener('click', () => {
     settingsMenu.classList.toggle('active');
-  };
+  });
 
-  loginForm.onsubmit = (e) => {
+  loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const user = loginForm.username.value.trim();
-    const pass = loginForm.password.value;
-    if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
-      sessionStorage.setItem('loggedIn', 'true');
-      loginForm.style.display = 'none';
-      adminPanel.style.display = 'block';
-      settingsMenu.classList.remove('active');
-      renderButtons();
-      renderAdminButtons();
-    } else {
-      alert('Incorrect login.');
-    }
-  };
+    const username = loginForm.username.value.trim();
+    const password = loginForm.password.value;
 
-  document.addEventListener('click', e => {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      showAdminPanel();
+      alert('Logged in successfully!');
+      settingsMenu.classList.remove('active');
+    } else {
+      alert('Incorrect username or password.');
+    }
+  });
+
+  async function showAdminPanel() {
+    loginForm.style.display = 'none';
+    adminPanel.style.display = 'block';
+    await renderButtons();
+    await renderAdminButtons();
+  }
+
+  document.addEventListener('click', (e) => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
+  let adminButtonListButtonsCache = [];
+
+  async function loadCache() {
+    adminButtonListButtonsCache = await loadButtons();
+  }
+
   if (sessionStorage.getItem('loggedIn') === 'true') {
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    renderButtons();
-    renderAdminButtons();
+    showAdminPanel();
   } else {
     renderButtons();
   }
+
+  // Keep cache updated after each renderAdminButtons call
+  const originalRenderAdminButtons = renderAdminButtons;
+  renderAdminButtons = async function() {
+    await originalRenderAdminButtons();
+    await loadCache();
+  };
 </script>
 </body>
 </html>
