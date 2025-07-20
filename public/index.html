@@ -211,6 +211,7 @@
     }
 
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
@@ -250,13 +251,11 @@
 
   <div class="button-group" id="buttonGroup"></div>
 
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-  const SUPABASE_URL = 'https://your-supabase-url.supabase.co'; // REPLACE
-  const SUPABASE_ANON_KEY = 'your-anon-key'; // REPLACE
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+  // Initialize Supabase client with your key and URL
+  const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
+  const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const gearBtn = document.getElementById('gearBtn');
   const settingsMenu = document.getElementById('settingsMenu');
@@ -275,13 +274,14 @@
   const ADMIN_USERNAME = 'Ryanf17';
   const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
 
-  let editId = null; // ID of button being edited
+  let editIndex = null;
   let rearranging = false;
   let draggedEl = null;
+  let buttons = []; // buttons from Supabase
 
-  // Load buttons from Supabase, ordered by position asc
-  async function loadButtons() {
-    let { data, error } = await supabase
+  // Fetch all buttons from Supabase
+  async function fetchButtons() {
+    const { data, error } = await supabase
       .from('buttons')
       .select('*')
       .order('position', { ascending: true });
@@ -290,16 +290,12 @@
       alert('Error loading buttons: ' + error.message);
       return [];
     }
-
-    // If no buttons, you might want to create defaults here (optional)
     return data;
   }
 
-  // Render the public buttons
-  async function renderButtons() {
+  // Render public buttons from global buttons array
+  function renderButtons() {
     buttonGroup.innerHTML = '';
-    const buttons = await loadButtons();
-
     buttons.forEach(b => {
       const a = document.createElement('a');
       if (b.is_embed) {
@@ -314,77 +310,55 @@
     });
   }
 
-  // Render admin list of buttons with Edit/Delete, drag handle
-  async function renderAdminButtons() {
+  // Render admin buttons with edit/delete, draggable if rearranging
+  function renderAdminButtons() {
     adminButtonList.innerHTML = '';
-    const buttons = await loadButtons();
-
-    buttons.forEach(b => {
+    buttons.forEach((b, i) => {
       const div = document.createElement('div');
       div.className = 'button-item';
 
+      // text span
       const span = document.createElement('span');
       span.textContent = b.text;
       div.appendChild(span);
 
+      // edit button
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
       editBtn.title = 'Edit this button';
-      editBtn.addEventListener('click', () => startEditButton(b));
+      editBtn.addEventListener('click', () => startEditButton(i));
       div.appendChild(editBtn);
 
+      // delete button
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
       delBtn.title = 'Delete this button';
-      delBtn.addEventListener('click', () => deleteButton(b.id));
+      delBtn.addEventListener('click', () => deleteButton(i));
       div.appendChild(delBtn);
+
+      if (rearranging) {
+        div.setAttribute('draggable', true);
+        div.addEventListener('dragstart', dragStart);
+        div.addEventListener('dragover', dragOver);
+        div.addEventListener('dragend', dragEnd);
+      }
 
       adminButtonList.appendChild(div);
     });
   }
 
-  // Start editing: fill inputs, set editId
-  function startEditButton(button) {
-    newBtnText.value = button.text;
-    newBtnUrl.value = button.url;
-    isEmbedCheckbox.checked = button.is_embed;
-    editId = button.id;
+  // Start editing a button
+  function startEditButton(index) {
+    const b = buttons[index];
+    newBtnText.value = b.text;
+    newBtnUrl.value = b.url;
+    isEmbedCheckbox.checked = b.is_embed;
+    editIndex = index;
     addBtn.textContent = 'Save Changes';
   }
 
-  // Delete button by ID
-  async function deleteButton(id) {
-    if (!confirm('Are you sure you want to delete this button?')) return;
-
-    const { error } = await supabase
-      .from('buttons')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert('Failed to delete: ' + error.message);
-      return;
-    }
-
-    alert('Button deleted.');
-    clearForm();
-    await renderButtons();
-    await renderAdminButtons();
-  }
-
-  // Clear form and reset edit mode
-  function clearForm() {
-    newBtnText.value = '';
-    newBtnUrl.value = '';
-    isEmbedCheckbox.checked = false;
-    editId = null;
-    addBtn.textContent = 'Add Button';
-  }
-
-  // Add or Save button handler
-  addBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-
+  // Add or update a button in Supabase
+  async function addOrUpdateButton() {
     const text = newBtnText.value.trim();
     const url = newBtnUrl.value.trim();
     const isEmbed = isEmbedCheckbox.checked;
@@ -392,50 +366,65 @@
     if (!text) return alert('Please enter button text.');
     if (!url) return alert('Please enter button URL or embed URL.');
 
-    if (editId) {
-      // Update existing button
+    if (editIndex !== null) {
+      // Update existing
+      const id = buttons[editIndex].id;
       const { error } = await supabase
         .from('buttons')
         .update({ text, url, is_embed: isEmbed })
-        .eq('id', editId);
+        .eq('id', id);
 
-      if (error) {
-        alert('Failed to update button: ' + error.message);
-        return;
-      }
+      if (error) return alert('Update error: ' + error.message);
+
       alert('Button updated!');
     } else {
-      // Add new button with position = max position + 1
-      const { data: buttons, error: fetchError } = await supabase
-        .from('buttons')
-        .select('position')
-        .order('position', { ascending: false })
-        .limit(1);
-
-      if (fetchError) {
-        alert('Error fetching positions: ' + fetchError.message);
-        return;
-      }
-
-      const maxPosition = buttons.length ? buttons[0].position : 0;
-
+      // Add new button at the end (position = max+1)
+      let maxPosition = buttons.length ? Math.max(...buttons.map(b => b.position)) : 0;
       const { error } = await supabase
         .from('buttons')
         .insert([{ text, url, is_embed: isEmbed, donate: false, position: maxPosition + 1 }]);
 
-      if (error) {
-        alert('Failed to add button: ' + error.message);
-        return;
-      }
+      if (error) return alert('Add error: ' + error.message);
+
       alert('Button added!');
     }
+    editIndex = null;
+    addBtn.textContent = 'Add Button';
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
+    await reloadButtons();
+  }
 
-    clearForm();
-    await renderButtons();
-    await renderAdminButtons();
-  });
+  // Delete a button in Supabase
+  async function deleteButton(index) {
+    if (!confirm('Are you sure you want to delete this button?')) return;
+    const id = buttons[index].id;
+    const { error } = await supabase
+      .from('buttons')
+      .delete()
+      .eq('id', id);
 
-  // Drag & drop handlers for rearranging buttons
+    if (error) return alert('Delete error: ' + error.message);
+    alert('Button deleted!');
+    if (editIndex === index) {
+      editIndex = null;
+      addBtn.textContent = 'Add Button';
+      newBtnText.value = '';
+      newBtnUrl.value = '';
+      isEmbedCheckbox.checked = false;
+    }
+    await reloadButtons();
+  }
+
+  // Reload buttons from Supabase and render
+  async function reloadButtons() {
+    buttons = await fetchButtons();
+    renderButtons();
+    renderAdminButtons();
+  }
+
+  // Drag & Drop handlers
   function dragStart(e) {
     draggedEl = e.target;
     e.dataTransfer.effectAllowed = 'move';
@@ -458,69 +447,49 @@
     draggedEl.classList.remove('dragging');
     draggedEl = null;
 
-    // Rebuild buttons array with new positions
-    const newOrder = [];
-    adminButtonList.querySelectorAll('.button-item span').forEach((span, index) => {
-      const text = span.textContent;
-      const allButtons = adminButtonListButtonsCache;
-      const found = allButtons.find(b => b.text === text);
-      if (found) newOrder.push({ ...found, position: index + 1 });
-    });
+    // Build new order based on current DOM order
+    const newOrderTexts = Array.from(adminButtonList.querySelectorAll('.button-item span')).map(span => span.textContent);
 
-    // Update positions in Supabase
-    for (const btn of newOrder) {
-      const { error } = await supabase
-        .from('buttons')
-        .update({ position: btn.position })
-        .eq('id', btn.id);
-      if (error) {
-        alert('Error updating positions: ' + error.message);
-        return;
+    // Match new order texts to buttons and update position in DB
+    for (let i = 0; i < newOrderTexts.length; i++) {
+      const b = buttons.find(b => b.text === newOrderTexts[i]);
+      if (b && b.position !== i + 1) {
+        const { error } = await supabase
+          .from('buttons')
+          .update({ position: i + 1 })
+          .eq('id', b.id);
+        if (error) {
+          alert('Error updating button order: ' + error.message);
+          return;
+        }
       }
     }
-
     alert('Buttons rearranged and saved!');
     rearranging = false;
     rearrangeBtn.textContent = 'Enable Rearrange';
-    disableDragAndDrop();
-    await renderButtons();
-    await renderAdminButtons();
-  }
-
-  function enableDragAndDrop() {
-    adminButtonList.querySelectorAll('.button-item').forEach(div => {
-      div.setAttribute('draggable', true);
-      div.addEventListener('dragstart', dragStart);
-      div.addEventListener('dragover', dragOver);
-      div.addEventListener('dragend', dragEnd);
-    });
-  }
-
-  function disableDragAndDrop() {
-    adminButtonList.querySelectorAll('.button-item').forEach(div => {
-      div.removeAttribute('draggable');
-      div.removeEventListener('dragstart', dragStart);
-      div.removeEventListener('dragover', dragOver);
-      div.removeEventListener('dragend', dragEnd);
-    });
+    await reloadButtons();
   }
 
   rearrangeBtn.addEventListener('click', () => {
     rearranging = !rearranging;
-    if (rearranging) {
-      enableDragAndDrop();
-      rearrangeBtn.textContent = 'Disable Rearrange';
-    } else {
-      disableDragAndDrop();
-      rearrangeBtn.textContent = 'Enable Rearrange';
-    }
+    rearrangeBtn.textContent = rearranging ? 'Disable Rearrange' : 'Enable Rearrange';
+    renderAdminButtons();
+  });
+
+  addBtn.addEventListener('click', async e => {
+    e.preventDefault();
+    await addOrUpdateButton();
   });
 
   logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('loggedIn');
     adminPanel.style.display = 'none';
     loginForm.style.display = 'flex';
-    clearForm();
+    editIndex = null;
+    addBtn.textContent = 'Add Button';
+    newBtnText.value = '';
+    newBtnUrl.value = '';
+    isEmbedCheckbox.checked = false;
     alert('Logged out.');
   });
 
@@ -532,14 +501,14 @@
     settingsMenu.classList.toggle('active');
   });
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async e => {
     e.preventDefault();
     const username = loginForm.username.value.trim();
     const password = loginForm.password.value;
 
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       sessionStorage.setItem('loggedIn', 'true');
-      showAdminPanel();
+      await showAdminPanel();
       alert('Logged in successfully!');
       settingsMenu.classList.remove('active');
     } else {
@@ -550,34 +519,24 @@
   async function showAdminPanel() {
     loginForm.style.display = 'none';
     adminPanel.style.display = 'block';
-    await renderButtons();
-    await renderAdminButtons();
+    await reloadButtons();
   }
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
       settingsMenu.classList.remove('active');
     }
   });
 
-  let adminButtonListButtonsCache = [];
-
-  async function loadCache() {
-    adminButtonListButtonsCache = await loadButtons();
-  }
-
-  if (sessionStorage.getItem('loggedIn') === 'true') {
-    showAdminPanel();
-  } else {
-    renderButtons();
-  }
-
-  // Keep cache updated after each renderAdminButtons call
-  const originalRenderAdminButtons = renderAdminButtons;
-  renderAdminButtons = async function() {
-    await originalRenderAdminButtons();
-    await loadCache();
-  };
+  // On page load
+  (async () => {
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      await showAdminPanel();
+    } else {
+      buttons = await fetchButtons();
+      renderButtons();
+    }
+  })();
 </script>
 </body>
 </html>
