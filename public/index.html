@@ -1,51 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ryan's Builds</title>
   <style>
-    body { margin:0; padding:0; font-family:sans-serif; background:#111; color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; position:relative; }
-    h1 { font-size:3rem; margin-bottom:10px; }
-    p { max-width:600px; margin:20px; font-size:1.2rem; line-height:1.5; }
-    .button-group { margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:800px; }
-    .button-group a { text-decoration:none; color:white; background:#444; padding:10px 20px; border-radius:8px; font-size:1rem; transition:background 0.3s; user-select:none; cursor:grab; position:relative; }
-    .button-group a:hover { background:#666; }
-    .button-group a.donate { background:#28a745; font-weight:bold; }
-    .button-group a.donate:hover { background:#218838; }
-    .gear-container { position:fixed; top:15px; right:15px; cursor:pointer; color:white; font-size:28px; user-select:none; z-index:1000; }
-    .settings-menu { display:none; position:fixed; top:55px; right:15px; background:#222; border:1px solid #444; border-radius:8px; padding:15px; width:280px; box-shadow:0 4px 10px rgba(0,0,0,0.7); color:white; font-size:14px; z-index:1000; }
-    .settings-menu.active { display:block; }
-    .settings-menu button, .settings-menu .edit-delete-btn { display:block; width:100%; margin-bottom:10px; padding:8px; background:#444; border:none; border-radius:5px; color:white; font-weight:600; cursor:pointer; transition:background 0.3s; box-sizing:border-box; user-select:none; }
-    .settings-menu button:hover, .settings-menu .edit-delete-btn:hover { background:#666; }
-    .login-form { display:flex; flex-direction:column; }
-    .login-form label { margin:8px 0 4px; text-align:left; font-size:14px; }
-    .login-form input { padding:8px; border-radius:5px; border:none; font-size:14px; margin-bottom:12px; }
-    .login-form button { background:#28a745; color:white; border:none; border-radius:5px; padding:10px; cursor:pointer; font-weight:700; font-size:14px; transition:background 0.3s; }
-    .login-form button:hover { background:#218838; }
-    #adminPanel .admin-banner { background:#28a745; color:#111; font-weight:bold; padding:8px; text-align:center; border-radius:5px; margin-bottom:10px; font-size:1rem; }
-    #adminPanel .button-list { max-height:300px; overflow-y:auto; margin-bottom:10px; border:1px solid #444; border-radius:5px; padding:5px; background:#222; }
-    #adminPanel .button-list .button-item { display:flex; justify-content:space-between; align-items:center; background:#333; padding:6px 8px; margin-bottom:6px; border-radius:5px; user-select:none; cursor:grab; }
-    #adminPanel .button-list .button-item span { flex:1; text-align:left; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding-right:8px; }
-    #adminPanel .button-list .button-item button { margin-left:5px; width:auto; padding:4px 8px; font-size:12px; background:#555; border-radius:4px; border:none; cursor:pointer; user-select:none;}
-    #adminPanel .button-list .button-item button:hover { background:#777; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background-color: #111;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    p {
+      max-width: 600px;
+      margin: 20px;
+      font-size: 1.2rem;
+      line-height: 1.5;
+    }
+
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+    }
+
+    .button-group a {
+      text-decoration: none;
+      color: white;
+      background-color: #444;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: background 0.3s;
+      user-select: none;
+      cursor: grab;
+      position: relative;
+    }
+
+    .button-group a:hover {
+      background-color: #666;
+    }
+
+    .button-group a.donate {
+      background-color: #28a745;
+      font-weight: bold;
+    }
+    .button-group a.donate:hover {
+      background-color: #218838;
+    }
+
+    .gear-container {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      cursor: pointer;
+      color: white;
+      font-size: 28px;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    .settings-menu {
+      display: none;
+      position: fixed;
+      top: 55px;
+      right: 15px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 15px;
+      width: 280px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+      color: white;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .settings-menu.active {
+      display: block;
+    }
+
+    .settings-menu button,
+    .settings-menu .edit-delete-btn {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #444;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .settings-menu button:hover,
+    .settings-menu .edit-delete-btn:hover {
+      background: #666;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-form label {
+      margin: 8px 0 4px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .login-form input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .login-form button {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .login-form button:hover {
+      background: #218838;
+    }
+
+    #adminPanel .admin-banner {
+      background: #28a745;
+      color: #111;
+      font-weight: bold;
+      padding: 8px;
+      text-align: center;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    /* Admin button list styling */
+    #adminPanel .button-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 5px;
+      background: #222;
+    }
+
+    #adminPanel .button-list div.button-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #333;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      border-radius: 5px;
+      user-select: none;
+    }
+
+    #adminPanel .button-list div.button-item span {
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      padding-right: 8px;
+    }
+
+    #adminPanel .button-list div.button-item button {
+      margin-left: 5px;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 12px;
+      background: #555;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+    }
+    #adminPanel .button-list div.button-item button:hover {
+      background: #777;
+    }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="gear-container" id="gearBtn" title="Settings ⚙️">&#9881;</div>
+
   <div class="settings-menu" id="settingsMenu">
     <form id="loginForm" class="login-form">
-      <label>Username</label><input type="text" id="username" required/>
-      <label>Password</label><input type="password" id="password" required/>
+      <label for="username">Username</label>
+      <input type="text" id="username" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required />
       <button type="submit">Log In</button>
     </form>
+
     <div id="adminPanel" style="display:none;">
-      <div class="admin-banner">Admin Mode Enabled</div>
-      <div class="button-list" id="adminButtonList"></div>
-      <label>Button Text</label><input id="newBtnText"/>
-      <label>Button URL or Embed URL</label><input id="newBtnUrl"/>
-      <label><input type="checkbox" id="isEmbedCheckbox"/> This is an embed link</label>
+      <div class="admin-banner" id="adminBanner">Admin Mode Enabled</div>
+
+      <div class="button-list" id="adminButtonList">
+        <!-- Admin list of buttons with Edit/Delete will appear here -->
+      </div>
+
+      <label for="newBtnText">Button Text</label>
+      <input type="text" id="newBtnText" placeholder="Button Label" />
+      <label for="newBtnUrl">Button URL or Embed URL</label>
+      <input type="text" id="newBtnUrl" placeholder="https://... or YouTube embed URL" />
+      <label><input type="checkbox" id="isEmbedCheckbox" /> This is an embed link</label>
       <button id="addBtn">Add Button</button>
       <button id="rearrangeBtn">Enable Rearrange</button>
       <button id="viewVisitorsBtn">View Visitors</button>
@@ -54,125 +243,343 @@
   </div>
 
   <h1>Ryan's Builds</h1>
-  <p>Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!</p>
+  <p>
+    Welcome to Ryan's Builds — a personal showcase of my custom creations in Rocitizens. It's a fun way to share tours, builds, and design ideas with the community. Feel free to explore and get inspired!
+  </p>
+
   <div class="button-group" id="buttonGroup"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   <script>
-    const supabase = window.supabase.createClient(
-      'https://dhvzodmctwrdeiliiyld.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E'
-    );
+    const SUPABASE_URL = 'https://dhvzodmctwrdeiliiyld.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodnpvZG1jdHdyZGVpbGlpeWxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTI5MTUsImV4cCI6MjA2ODQ2ODkxNX0.vPOqNtWJlemSLdguWgkQg0WYH8Xj73OU-FTR7Y-pq7E';
 
-    const ADMIN = { user:'Ryanf17', pass:'G7m#P9xL2@Qz' };
-    let editIndex = null, rearranging = false, dragged = null;
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function fetchButtons() {
-      const { data, error } = await supabase.from('buttons').select('*').order('position');
-      if (error) console.error(error);
-      return data || [];
+    // Admin login credentials (for demo)
+    const ADMIN_USERNAME = 'Ryanf17';
+    const ADMIN_PASSWORD = 'G7m#P9xL2@Qz';
+
+    // DOM Elements
+    const gearBtn = document.getElementById('gearBtn');
+    const settingsMenu = document.getElementById('settingsMenu');
+    const loginForm = document.getElementById('loginForm');
+    const adminPanel = document.getElementById('adminPanel');
+    const buttonGroup = document.getElementById('buttonGroup');
+    const newBtnText = document.getElementById('newBtnText');
+    const newBtnUrl = document.getElementById('newBtnUrl');
+    const isEmbedCheckbox = document.getElementById('isEmbedCheckbox');
+    const rearrangeBtn = document.getElementById('rearrangeBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const viewVisitorsBtn = document.getElementById('viewVisitorsBtn');
+    const adminButtonList = document.getElementById('adminButtonList');
+    const addBtn = document.getElementById('addBtn');
+
+    let buttons = [];
+    let editIndex = null;
+    let rearranging = false;
+    let draggedEl = null;
+
+    async function loadButtonsFromSupabase() {
+      const { data, error } = await supabase
+        .from('buttons')
+        .select('*')
+        .order('position', { ascending: true });
+
+      if (error) {
+        console.error('Error loading buttons:', error);
+        alert('Failed to load buttons from database.');
+        return;
+      }
+      buttons = data || [];
+      renderButtons();
+      if (sessionStorage.getItem('loggedIn') === 'true') {
+        renderAdminButtons();
+      }
     }
 
-    function drawButtons(arr) {
-      document.getElementById('buttonGroup').innerHTML = '';
-      arr.forEach(b => {
-        const a = document.createElement('a');
-        a.textContent = b.text;
-        a.href = b.isEmbed ? `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}` : b.url;
-        if (b.donate) a.classList.add('donate');
-        a.target='_blank';
-        document.getElementById('buttonGroup').appendChild(a);
-      });
-    }
-
-    async function loadAll() {
-      const btns = await fetchButtons();
-      drawButtons(btns);
-      if (sessionStorage.getItem('logged')) loadAdmin(btns);
-    }
-
-    function loadAdmin(btns) {
-      document.getElementById('loginForm').style.display='none';
-      document.getElementById('adminPanel').style.display='block';
-      renderAdminList(btns);
-    }
-
-    function renderAdminList(btns) {
-      const list = document.getElementById('adminButtonList');
-      list.innerHTML = '';
-      btns.forEach((b, i) => {
-        const div = document.createElement('div');
-        div.className='button-item'; div.draggable = rearranging;
-        div.innerHTML = `<span>${b.text}</span>
-          <button onclick="editBtn(${i})">Edit</button>
-          <button onclick="delBtn(${i})">Delete</button>`;
-        list.appendChild(div);
-        div.addEventListener('dragstart',e=>{dragged=e.target;});
-        div.addEventListener('dragover',e=>{e.preventDefault();});
-        list.addEventListener('drop',e=>{
-          if(!rearranging||!dragged) return;
-          list.insertBefore(dragged, e.target.closest('.button-item'));
-        });
-      });
-    }
-
-    document.getElementById('loginForm').onsubmit = async e => {
-      e.preventDefault();
-      if (username.value===ADMIN.user && password.value===ADMIN.pass) {
-        sessionStorage.setItem('logged','1');
-        loadAll();
-      } else alert('Wrong credentials');
-    };
-
-    window.editBtn = i => {
-      editIndex=i; fetchButtons().then(btns=>{
-        const b=btns[i];
-        newBtnText.value=b.text; newBtnUrl.value=b.url; isEmbedCheckbox.checked=b.isEmbed;
-        addBtn.textContent='Save Changes';
-      });
-    };
-
-    window.delBtn = async i => {
-      const btns = await fetchButtons();
-      await supabase.from('buttons').delete().eq('id', btns[i].id);
-      loadAll();
-    };
-
-    addBtn.onclick = async () => {
-      const b = { text:newBtnText.value, url:newBtnUrl.value, isEmbed:isEmbedCheckbox.checked, donate:false };
-      if (editIndex!=null) {
-        const btns = await fetchButtons();
-        await supabase.from('buttons').update(b).eq('id', btns[editIndex].id);
-        editIndex=null;
-        addBtn.textContent='Add Button';
+    async function saveButtonToSupabase(button) {
+      if (editIndex !== null) {
+        // Update existing
+        const id = buttons[editIndex].id;
+        const { error } = await supabase
+          .from('buttons')
+          .update({
+            text: button.text,
+            url: button.url,
+            isEmbed: button.isEmbed,
+          })
+          .eq('id', id);
+        if (error) {
+          console.error('Update error:', error);
+          alert('Failed to update button.');
+          return false;
+        }
+        buttons[editIndex] = { ...buttons[editIndex], ...button };
+        editIndex = null;
+        addBtn.textContent = 'Add Button';
       } else {
-        const count = (await fetchButtons()).length;
-        await supabase.from('buttons').insert({ ...b, position:count });
+        // Insert new
+        // Position is last + 1
+        const position = buttons.length ? buttons[buttons.length - 1].position + 1 : 0;
+        const { data, error } = await supabase
+          .from('buttons')
+          .insert([{ ...button, position }])
+          .select();
+        if (error) {
+          console.error('Insert error:', error);
+          alert('Failed to add button.');
+          return false;
+        }
+        buttons.push(data[0]);
       }
-      newBtnText.value=''; newBtnUrl.value=''; isEmbedCheckbox.checked=false;
-      loadAll();
-    };
+      return true;
+    }
 
-    rearrangeBtn.onclick = () => {
+    async function deleteButtonFromSupabase(index) {
+      const id = buttons[index].id;
+      const { error } = await supabase
+        .from('buttons')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        alert('Failed to delete button.');
+        return false;
+      }
+
+      buttons.splice(index, 1);
+      return true;
+    }
+
+    async function updatePositionsInSupabase() {
+      for (let i = 0; i < buttons.length; i++) {
+        const button = buttons[i];
+        if (button.position !== i) {
+          const { error } = await supabase
+            .from('buttons')
+            .update({ position: i })
+            .eq('id', button.id);
+          if (error) {
+            console.error('Position update error:', error);
+            alert('Failed to update button positions.');
+            return false;
+          }
+          button.position = i;
+        }
+      }
+      return true;
+    }
+
+    function renderButtons() {
+      buttonGroup.innerHTML = '';
+      buttons.forEach(b => {
+        const a = document.createElement('a');
+        if (b.isEmbed) {
+          a.href = `embed.html?video=${encodeURIComponent(b.url)}&title=${encodeURIComponent(b.text)}`;
+        } else {
+          a.href = b.url;
+        }
+        a.textContent = b.text;
+        a.target = '_blank';
+        if (b.donate) a.classList.add('donate');
+        buttonGroup.appendChild(a);
+      });
+    }
+
+    function renderAdminButtons() {
+      adminButtonList.innerHTML = '';
+      buttons.forEach((b, i) => {
+        const div = document.createElement('div');
+        div.className = 'button-item';
+
+        const span = document.createElement('span');
+        span.textContent = b.text;
+        div.appendChild(span);
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.title = 'Edit this button';
+        editBtn.addEventListener('click', () => startEditButton(i));
+        div.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.title = 'Delete this button';
+        delBtn.addEventListener('click', async () => {
+          if (confirm('Are you sure you want to delete this button?')) {
+            const success = await deleteButtonFromSupabase(i);
+            if (success) {
+              renderButtons();
+              renderAdminButtons();
+              clearForm();
+            }
+          }
+        });
+        div.appendChild(delBtn);
+
+        adminButtonList.appendChild(div);
+      });
+      if (rearranging) enableDragAndDrop();
+    }
+
+    function startEditButton(index) {
+      const b = buttons[index];
+      newBtnText.value = b.text;
+      newBtnUrl.value = b.url;
+      isEmbedCheckbox.checked = b.isEmbed;
+      editIndex = index;
+      addBtn.textContent = 'Save Changes';
+    }
+
+    function clearForm() {
+      newBtnText.value = '';
+      newBtnUrl.value = '';
+      isEmbedCheckbox.checked = false;
+      editIndex = null;
+      addBtn.textContent = 'Add Button';
+    }
+
+    // Drag & drop handlers
+    function dragStart(e) {
+      draggedEl = e.target;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', draggedEl.outerHTML);
+      draggedEl.classList.add('dragging');
+    }
+
+    function dragOver(e) {
+      e.preventDefault();
+      const target = e.target.closest('.button-item');
+      if (target && target !== draggedEl) {
+        const container = target.parentNode;
+        const rect = target.getBoundingClientRect();
+        const next = (e.clientY - rect.top) / rect.height > 0.5;
+        container.insertBefore(draggedEl, next ? target.nextSibling : target);
+      }
+    }
+
+    async function dragEnd(e) {
+      draggedEl.classList.remove('dragging');
+      draggedEl = null;
+
+      // Rebuild buttons array in new order
+      const newOrder = [];
+      adminButtonList.querySelectorAll('.button-item span').forEach(span => {
+        const text = span.textContent;
+        const found = buttons.find(b => b.text === text);
+        if (found) newOrder.push(found);
+      });
+      buttons = newOrder;
+
+      const success = await updatePositionsInSupabase();
+      if (success) {
+        renderButtons();
+        alert('Buttons rearranged and saved!');
+      }
+      rearranging = false;
+      rearrangeBtn.textContent = 'Enable Rearrange';
+      disableDragAndDrop();
+    }
+
+    function enableDragAndDrop() {
+      adminButtonList.querySelectorAll('.button-item').forEach(div => {
+        div.setAttribute('draggable', true);
+        div.addEventListener('dragstart', dragStart);
+        div.addEventListener('dragover', dragOver);
+        div.addEventListener('dragend', dragEnd);
+      });
+    }
+
+    function disableDragAndDrop() {
+      adminButtonList.querySelectorAll('.button-item').forEach(div => {
+        div.removeAttribute('draggable');
+        div.removeEventListener('dragstart', dragStart);
+        div.removeEventListener('dragover', dragOver);
+        div.removeEventListener('dragend', dragEnd);
+      });
+    }
+
+    // Event Listeners
+    gearBtn.addEventListener('click', () => {
+      settingsMenu.classList.toggle('active');
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = loginForm.username.value.trim();
+      const password = loginForm.password.value;
+
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        sessionStorage.setItem('loggedIn', 'true');
+        showAdminPanel();
+        alert('Logged in successfully!');
+        settingsMenu.classList.remove('active');
+      } else {
+        alert('Incorrect username or password.');
+      }
+    });
+
+    addBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const text = newBtnText.value.trim();
+      const url = newBtnUrl.value.trim();
+      const isEmbed = isEmbedCheckbox.checked;
+
+      if (!text) return alert('Please enter button text.');
+      if (!url) return alert('Please enter button URL or embed URL.');
+
+      const success = await saveButtonToSupabase({ text, url, isEmbed, donate: false });
+      if (!success) return;
+
+      clearForm();
+      renderButtons();
+      renderAdminButtons();
+      alert(editIndex === null ? 'Button added!' : 'Button updated!');
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('loggedIn');
+      adminPanel.style.display = 'none';
+      loginForm.style.display = 'flex';
+      clearForm();
+      alert('Logged out.');
+    });
+
+    rearrangeBtn.addEventListener('click', () => {
       rearranging = !rearranging;
-      rearrangeBtn.textContent = rearranging?'Disable Rearrange':'Enable Rearrange';
-      loadAll();
-      if (!rearranging){
-        const list = Array.from(document.getElementById('adminButtonList').children);
-        Promise.all(list.map((div,i)=>{
-          const id = div.querySelector('span').textContent;
-          return supabase.from('buttons').update({ position:i }).eq('text', id);
-        })).then(loadAll);
+      rearrangeBtn.textContent = rearranging ? 'Disable Rearrange' : 'Enable Rearrange';
+      if (rearranging) {
+        enableDragAndDrop();
+      } else {
+        disableDragAndDrop();
       }
-    };
+    });
 
-    logoutBtn.onclick = () => {
-      sessionStorage.removeItem('logged');
-      location.reload();
-    };
+    viewVisitorsBtn.addEventListener('click', () => {
+      window.location.href = 'visitors.html'; // Replace with actual visitors page
+    });
 
-    gearBtn.onclick = () => settingsMenu.classList.toggle('active');
+    document.addEventListener('click', (e) => {
+      if (!settingsMenu.contains(e.target) && !gearBtn.contains(e.target)) {
+        settingsMenu.classList.remove('active');
+      }
+    });
 
-    window.onload = loadAll;
+    function showAdminPanel() {
+      loginForm.style.display = 'none';
+      adminPanel.style.display = 'block';
+      renderAdminButtons();
+    }
+
+    // On page load
+    (async () => {
+      await loadButtonsFromSupabase();
+      if (sessionStorage.getItem('loggedIn') === 'true') {
+        showAdminPanel();
+      }
+    })();
   </script>
 </body>
 </html>
